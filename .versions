@@ -34,13 +34,13 @@ html-tools@1.0.5
 htmljs@1.0.5
 http@1.1.1
 id-map@1.0.4
-jorisroling:orion-abtest@0.0.5
+jorisroling:orion-imagefiles@0.0.1
 jquery@1.11.4
 launch-screen@1.0.4
+less@2.5.1
 livedata@1.0.15
 localstorage@1.0.5
 logging@1.0.8
-manuel:abtest@1.0.7
 meteor@1.1.10
 meteor-base@1.0.1
 meteor-platform@1.2.3
