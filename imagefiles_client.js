@@ -52,14 +52,19 @@ ReactiveTemplates.onCreated('orionImageFiles', function() {
 ReactiveTemplates.helpers('orionImageFiles', {
 	imagefiles: function() {
 		if (Roles.userHasRole(Meteor.userId(),'admin')) {
-	        var imagefiles = ImageFiles.find({},{sort:{uploadDate:1}});
+	        var imagefiles = ImageFiles.find({},{sort:{uploadDate:-1}});
 			return imagefiles;
-	        return imagefiles.map(function(imagefile, index, cursor) {
-	            imagefile._index = ++index;
-	            return imagefile;
-	        });
+	        // return imagefiles.map(function(imagefile, index, cursor) {
+	        //     imagefile._index = ++index;
+	        //     return imagefile;
+	        // });
 		}
 	},
+	moreResults() {
+	    // If, once the subscription is ready, we have less rows than we
+	    // asked for, we've got all the rows in the collection.
+	    return !(ImageFiles.find().count() < Session.get('imageFilesLimit'));
+	}
 });
 
 ReactiveTemplates.events('orionImageFiles', {
