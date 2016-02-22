@@ -1,0 +1,28 @@
+<template name="jorisroling_orionImageFiles_bootstrap">
+  <!-- {{# Layout template="orionBootstrapSmallContentOffset" }} -->
+	  <h1 class="title">Image <small>Files</small></h1>
+    <!-- {{# Layout template="orionBootstrapContentContainer" }} -->
+		<div id="orionImageFiles">
+			<!-- {{#each imagefiles}}
+				{{{eyes this}}}
+				{{>imageFileCard}}
+			{{/each}} -->
+		    {{> isotope cssClass="container-fluid" cursor=imagefiles template="imageFileCard" layoutMode="masonry" gutter=10}}
+			
+		</div>
+    <!-- {{/ Layout }} -->
+  <!-- {{/ Layout }} -->
+</template>
+
+<template name="imageFileCard">
+   <div class="imageFileCard ">
+	   <div class="imageFileCard-content">
+		   <span aria-hidden="true" class="imageFileRemove pull-right">&times;</span>
+			<!-- {{{eyes this}}} -->
+	        <h3>{{filename}}</h3>
+			<img src="/image/{{id}}" data-toggle="lightbox" class="img-responsive"/>
+			<!-- <img src="{{metadata.original}}" data-toggle="lightbox" class="img-responsive"/> -->
+	        <p>{{metadata.original}}</p>
+		</div>
+    </div>
+</template>
