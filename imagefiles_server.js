@@ -261,6 +261,8 @@ RouterLayer.ironRouter.route('/image/:id?', function() {
 								},
 								aliases: []
 							}
+							if (self.request.query.title) options.metadata.title=self.request.query.title;
+							if (self.request.query.description) options.metadata.description=self.request.query.description;
 							gfs.createWriteStream(options, function (error, writestream) {
 								if (writestream) {
 								    writestream.on('finish', function() {
@@ -406,6 +408,8 @@ RouterLayer.ironRouter.route('/derivate/:id?', function() {
 														},
 														aliases: []
 													}
+													if (self.request.query.title) options.metadata.title=self.request.query.title;
+													if (self.request.query.description) options.metadata.description=self.request.query.description;
 													gfs.createWriteStream(options, function (error, writestream) {
 														if (writestream) {
 														    writestream.on('finish', function() {

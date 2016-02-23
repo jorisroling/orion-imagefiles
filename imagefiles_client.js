@@ -12,6 +12,41 @@ Tracker.autorun(function() {
   });
 });
 
+var getRandomInt = function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+var rndImages=[];
+var rndImage = function(callback) {
+	if (!rndImages || !rndImages.length) {
+		rndImages=[];
+
+		var page_nr=getRandomInt(1,200);
+		var consumer_key='vyhxftLMD6xO9Ev0rcL3qxZYd1v2UuZ58TwVm48v';
+
+		var url='https://api.500px.com/v1/photos?feature=popular&page='+page_nr+'&image_size[]=4&consumer_key='+consumer_key;
+
+        return Meteor.http.call('GET', url, {
+          headers: {
+            "content-type":"application/json",
+            "Accept":"application/json"
+          },
+        },function(error, result) {
+			console.log({http:result});
+			  _.each(result.data.photos,function(photo){
+				  rndImages.push({link:photo.image_url[0],title:photo.name,description:photo.description});
+			  });
+		  	if (rndImages && rndImages.length) {
+		  		return callback(null,rndImages.splice(0,1));
+		  	}
+		})
+
+	}
+	if (rndImages && rndImages.length) {
+		return callback(null,rndImages.splice(0,1));
+	}
+}
+
 var IMAGE_FILES_INCREMENT = 6;
 
 // whenever #imageFilesShowMoreResults becomes visible, retrieve more results
@@ -68,6 +103,21 @@ ReactiveTemplates.helpers('orionImageFiles', {
 });
 
 ReactiveTemplates.events('orionImageFiles', {
+	'click .image-preview':function(e) {
+		rndImage(function(err,img) {
+			console.log({img});
+			if (Array.isArray(img) && img.length) img=img[0];
+			var src='/image?url='+encodeURIComponent(img.link);
+			if (img.title && img.title.length) src+='&title='+encodeURIComponent(img.title);
+			if (img.description && img.description.length) src+='&description='+encodeURIComponent(img.description);
+			if (!err && img) $('.image-preview').attr('src',src);
+		});
+	},
+	'submit .image-new': function (e) {
+		e.preventDefault();
+		$('.image-preview').attr('src','/image?url='+encodeURIComponent(e.target.imagelink.value));
+		e.target.imagelink.value = '';
+	},
 });
 
 
@@ -98,6 +148,19 @@ function grabId(id)
 Template.imageFileCard.helpers({
 	id() {
 		return grabId(this._id);
+	},
+	title() {
+		if (this.metadata && typeof this.metadata.title=='string') {
+			return this.metadata.title.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+		}
+		if (typeof this.filename=='string') {
+			return this.filename.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+		}
+	},
+	description() {
+		if (this.metadata && typeof this.metadata.description=='string') {
+			return this.metadata.description;
+		}
 	}
 });
 
@@ -116,6 +179,7 @@ Template.imageFileCard.events({
 		e.preventDefault();
 		
 		var id=e.target.parentNode.parentNode.parentNode.dataset.isotopeItemId;
+		// console.log({e});
 		// console.log({this._id});
 		var self=this;
 		if (id) {
