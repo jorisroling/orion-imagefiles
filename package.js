@@ -1,7 +1,7 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '0.0.4',
+	version: '0.0.6',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
@@ -11,9 +11,10 @@ Package.onUse(function(api) {
 
 	api.use(['orionjs:bootstrap@1.6.0'], 'client', { weak: true });
 	
-	api.use(['mizzao:bootboxjs@4.4.0'], 'client', { weak: true });
-	api.use(['jorisroling:isotope@1.0.8'], 'client', { weak: true });
-	api.use(['jorisroling:eyes@0.0.10'], 'client', { weak: true });
+	api.use(['jorisroling:isotope@1.0.8'], 'client');
+	api.use(['jorisroling:eyes@0.0.10'], 'client');
+	api.use(['mizzao:bootboxjs@4.4.0'], 'client');
+	api.use(['tsega:bootstrap3-lightbox@0.2.0'], 'client');
 	
 
 	api.addFiles('imagefiles.js');
