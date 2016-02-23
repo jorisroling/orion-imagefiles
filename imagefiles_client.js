@@ -103,7 +103,10 @@ ReactiveTemplates.helpers('orionImageFiles', {
 	    // If, once the subscription is ready, we have less rows than we
 	    // asked for, we've got all the rows in the collection.
 	    return !(ImageFiles.find().count() < Session.get('imageFilesLimit'));
-	}
+	},
+	search() {
+		return Session.get('imageFilesSearch');
+	},
 });
 
 function search(value)

@@ -13,6 +13,10 @@ Meteor.publish('image.files', function(limit, search) {
 		// Assign safe values to a new object after they have been validated
 		// selector.name = query.name;
 		if (search && search.length) selector.$text = {$search:search};
+
+		Counts.publish(this,'image.files',ImageFiles.find(selector), { noReady: true });
+	 
+
 		var result=ImageFiles.find(selector, {
 			limit: limit || 20,
 			// Using sort here is necessary to continue to use the Oplog Observe Driver!
@@ -23,6 +27,7 @@ Meteor.publish('image.files', function(limit, search) {
 			}
 		});
 		if (debug) eyes({limit,selector,imagefiles:result.count()});
+		
 		return result;
 	}
 });
