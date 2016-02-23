@@ -106,6 +106,17 @@ ReactiveTemplates.helpers('orionImageFiles', {
 	}
 });
 
+function search(value)
+{
+	// console.log(value);
+	let rvalue=Session.get('imageFilesSearch')||'';
+	if (!value) value='';
+	if (rvalue!=value) {
+		Session.set('imageFilesLimit',IMAGE_FILES_INCREMENT);
+		Session.set('imageFilesSearch',value);
+	}
+}
+
 ReactiveTemplates.events('orionImageFiles', {
 	'click .image-preview':function(e) {
 		rndImage(function(err,img) {
@@ -119,26 +130,16 @@ ReactiveTemplates.events('orionImageFiles', {
 	},
 	'keyup #image-search': _.throttle(function(e,t) {
 		e.preventDefault();
-		
-		value=e.target.value;
-		// console.log(value);
-		let rvalue=Session.get('imageFilesSearch')||'';
-		if (!value) value='';
-		if (rvalue!=value) {
-			Session.set('imageFilesLimit',IMAGE_FILES_INCREMENT);
-			Session.set('imageFilesSearch',value);
-		}
-		// if (value=='') {
-		// 	$('.remove-search').hide();
-		// } else {
-		// 	$('.remove-search').show();
-		// }
-		
+		search(e.target.value);
 	},400,{lead:false}),
 	'submit .image-new': function (e) {
 		e.preventDefault();
 		$('.image-preview').attr('src','/image?url='+encodeURIComponent(e.target.imagelink.value));
 		e.target.imagelink.value = '';
+	},
+	'submit .image-search': function (e) {
+		e.preventDefault();
+		search(e.target.imagesearch.value);
 	},
 });
 

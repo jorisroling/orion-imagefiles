@@ -267,6 +267,7 @@ RouterLayer.ironRouter.route('/image/:id?', function() {
 								aliases: []
 							}
 							if (self.request.query.title) options.metadata.title=self.request.query.title;
+							if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
 							if (self.request.query.description) options.metadata.description=self.request.query.description;
 							gfs.createWriteStream(options, function (error, writestream) {
 								if (writestream) {
@@ -414,7 +415,8 @@ RouterLayer.ironRouter.route('/derivate/:id?', function() {
 														aliases: []
 													}
 													if (self.request.query.title) options.metadata.title=self.request.query.title;
-													if (self.request.query.description) options.metadata.description=self.request.query.description;
+													if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+														if (self.request.query.description) options.metadata.description=self.request.query.description;
 													gfs.createWriteStream(options, function (error, writestream) {
 														if (writestream) {
 														    writestream.on('finish', function() {
