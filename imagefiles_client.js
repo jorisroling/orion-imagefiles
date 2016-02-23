@@ -117,6 +117,24 @@ ReactiveTemplates.events('orionImageFiles', {
 			if (!err && img) $('.image-preview').attr('src',src);
 		});
 	},
+	'keyup #image-search': _.throttle(function(e,t) {
+		e.preventDefault();
+		
+		value=e.target.value;
+		// console.log(value);
+		let rvalue=Session.get('imageFilesSearch')||'';
+		if (!value) value='';
+		if (rvalue!=value) {
+			Session.set('imageFilesLimit',IMAGE_FILES_INCREMENT);
+			Session.set('imageFilesSearch',value);
+		}
+		// if (value=='') {
+		// 	$('.remove-search').hide();
+		// } else {
+		// 	$('.remove-search').show();
+		// }
+		
+	},400,{lead:false}),
 	'submit .image-new': function (e) {
 		e.preventDefault();
 		$('.image-preview').attr('src','/image?url='+encodeURIComponent(e.target.imagelink.value));

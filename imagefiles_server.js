@@ -1,4 +1,7 @@
 var debug=false;
+Meteor.startup(function() {
+	ImageFiles._ensureIndex({'filename':'text','metadata.original':'text','metadata.title':'text','metadata.description':'text'},{unique:false,background: true});
+});
 
 Meteor.publish('image.files', function(limit, search) {
 	
