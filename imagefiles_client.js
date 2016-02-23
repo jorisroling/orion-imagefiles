@@ -32,7 +32,7 @@ var rndImage = function(callback) {
             "Accept":"application/json"
           },
         },function(error, result) {
-			console.log({http:result});
+			// console.log({http:result});
 			  _.each(result.data.photos,function(photo){
 				  rndImages.push({link:photo.image_url[0],title:photo.name,description:photo.description});
 			  });
@@ -84,6 +84,10 @@ ReactiveTemplates.onCreated('orionImageFiles', function() {
     Session.setDefault('imageFilesSearch', '');
 });
 
+ReactiveTemplates.onRendered('orionImageFiles', function() {
+	$('[data-toggle="tooltip"]').tooltip()
+})
+
 ReactiveTemplates.helpers('orionImageFiles', {
 	imagefiles: function() {
 		if (Roles.userHasRole(Meteor.userId(),'admin')) {
@@ -105,7 +109,7 @@ ReactiveTemplates.helpers('orionImageFiles', {
 ReactiveTemplates.events('orionImageFiles', {
 	'click .image-preview':function(e) {
 		rndImage(function(err,img) {
-			console.log({img});
+			// console.log({img});
 			if (Array.isArray(img) && img.length) img=img[0];
 			var src='/image?url='+encodeURIComponent(img.link);
 			if (img.title && img.title.length) src+='&title='+encodeURIComponent(img.title);

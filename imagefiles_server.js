@@ -1,8 +1,10 @@
+var debug=false;
+
 Meteor.publish('image.files', function(limit, search) {
 	
 	if (Roles.userHasRole(this.userId,'admin')) {
 		var selector = {};
-			eyes({limit,search});
+		if (debug) eyes({limit,search});
 		if (limit) check(limit, Number);
 		if (search) check(search, String);
 		// Assign safe values to a new object after they have been validated
@@ -17,7 +19,7 @@ Meteor.publish('image.files', function(limit, search) {
 				// name:1
 			}
 		});
-		eyes({limit,selector,imagefiles:result.count()});
+		if (debug) eyes({limit,selector,imagefiles:result.count()});
 		return result;
 	}
 });
@@ -42,13 +44,13 @@ Meteor.methods({
 		gfs.remove(options, function (err, result) {
 		  if (err) { eyes({err}) }
 		  if (result) {
-		    eyes('remove success');
+		    if (debug) eyes('remove success');
 		  } else {
-		    eyes('remove failed');  // Due to failure to get a write lock
+		    if (debug) eyes('remove failed');  // Due to failure to get a write lock
 		  }
 		});
 		
-		eyes({id});
+		if (debug) eyes({id});
 	},
 });
 
@@ -125,7 +127,7 @@ function pipeCachedFile(id,link,derivate,request,response,callback)
 	var query;
 	
 	if (id && id.length) {
-		eyes({id});
+		if (debug) eyes({id});
 		query={'_id':new MongoInternals.NpmModule.ObjectID(id)};
 	} else {
 		query={'metadata.original':link};
