@@ -144,6 +144,11 @@ ReactiveTemplates.events('orionImageFiles', {
 		e.preventDefault();
 		search(e.target.imagesearch.value);
 	},
+	'click .remove-search': function(e) {
+		// console.log('rs');
+	    Session.set('imageFilesLimit', IMAGE_FILES_INCREMENT);
+	    Session.set('imageFilesSearch', '');
+	},
 });
 
 
