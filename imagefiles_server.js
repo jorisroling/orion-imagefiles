@@ -81,8 +81,6 @@ var hash = Npm.require('object-hash');
 var imageSize = Npm.require('image-size');
 var imageType = Npm.require('image-type');
 
-var debug=false;
-
 /*
 easyimg.info(<image_path>) - to retrieve information about an image. Will return an object with the following properties - type, depth, width, height, size, density, name, and path.
 easyimg.convert(<options>) - to convert an image from one format to another.
@@ -120,199 +118,236 @@ http://localhost.charlesproxy.com:8000/derivate?url=http://slodive.com/wp-conten
 
 */																
 
-
-function pipeCachedFile(id,link,derivate,request,response,callback)
+function preProcess(id,derivate,request,response,callback)
 {
-	var cache=(request.query.cache==='false'?false:(request.headers['cache-control']==='no-cache'?false:true));
-	if (debug) eyes({cache});
-	if (!cache) return callback();
-	
-	// ImageFiles
-	// var Files=Mongo.Collection.get(gridCollection+'.files');
-	// if (!Files) Files=new Meteor.Collection(gridCollection+'.files');
-	
-	
-	var query;
-	
-	if (id && id.length) {
-		if (debug) eyes({id});
-		query={'_id':new MongoInternals.NpmModule.ObjectID(id)};
-	} else {
-		query={'metadata.original':link};
-		query['metadata.kind']=derivate?'derivate':'original';
-		if (derivate && derivate.hash) query['metadata.derivate.hash']=derivate.hash;
-	}
-	
+	var result={};
 	if (debug) eyes({request:request.headers});
-	
-	if (debug) eyes({query});
-	var imageFiles=ImageFiles.find(query,{limit:1}).fetch();
-	if (imageFiles && imageFiles[0]) {
-		
-		if (imageFiles[0].md5 === request.headers['if-none-match']) {
-	        response.writeHead(304, {});
-			response.end();
-			return callback(null,'not-modified-etag')
-		}
-		
-		let lastModified=moment(imageFiles[0].uploadDate).format('ddd, DD MMM YYYY HH:mm:ss')+' GMT';
 
-		if (lastModified === request.headers['if-modified-since']) {
-	        response.writeHead(304, {});
-			response.end();
-			return callback(null,'not-modified-date')
+	if (derivate) result.derivate=derivate;
+	if (request.query.url) result.link=unescape(request.query.url);
+	if (request.query.title) result.title=request.query.title;
+	if (request.query.description) result.description=request.query.description;
+
+	if (request.query.variant) {
+		if (debug) eyes('variant!');
+		let variant=Mongo.Collection.get('variants').find({_id:id},{limit:1}).fetch();
+		if (variant && variant.length) {
+			variant=variant[0];
+			if (variant.images && variant.images.length) result.link=variant.images[0];
+			if (variant.name) result.title=variant.name;
+			if (variant.description) result.description=variant.description;
+			result.variant={id:variant._id,brand:variant.brand,aggregator:variant.aggregator,merchant:variant.merchant,section:variant.section,ean:variant.ean};
+			
+			if (debug) eyes({variant});
+			if (debug) eyes({result});
+			callback(null,result);
+		} else {
+			callback(new Error('Variant not found'));
 		}
-		
-		// if (debug) eyes({imageFiles});
-		let options={
-			_id: new MongoInternals.NpmModule.ObjectID(imageFiles[0]._id.valueOf())//imageFiles[0]._id.valueOf(),
-		};
-		// if (debug) eyes({options});
-		var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
-		
-		gfs.createReadStream(options, function (error, readstream) {
-			if (error) {
-				callback(error);
-			} else {
-				if (readstream) {
-					// if (debug) eyes('pipe');
-					// if (debug) eyes({readstream,response});
-					var headers={
-						// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
-						'Server':'meteor',
-						'Date':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' CET',
-						'Content-Type': imageFiles[0].contentType,
-						'Content-Length': imageFiles[0].length,
-						'Last-Modified':lastModified,
-						'ETag':imageFiles[0].md5,
-						// 'Expires':moment(imageFiles[0].uploadDate).format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
-						'Expires':moment().add(1,'months').format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
-						'Max-Age':60*60*24*30,
-						'Cache-Control':'public; max-age=2678400',
-			        }
-					if (debug) eyes({myresponse:headers});
-			        response.writeHead(200, headers);
-					readstream.pipe(response);
-					callback(null,'streamt')
-				} else {
-					// Stream couldn't be created because a read lock was not available
-					callback(new Error('Stream couldn\'t be created because a read lock was not available'))
-				}
-			}
-		});
 	} else {
-		callback()
+		if (id) result.id=id;
+		callback(null,result);
 	}
 }
 
-function dummyCallback(callback) {
-	callback()
+
+function pipeCachedFile(id,derivate,request,response,callback)
+{
+	preProcess(id,derivate,request,response,function(err,result) {
+		if (err) throw err;
+		if (result) {
+			var cache=(request.query.cache==='false'?false:(request.headers['cache-control']==='no-cache'?false:true));
+			if (debug) eyes({cache});
+
+			if (cache) {
+				// if (!cache) return callback();
+	
+				// ImageFiles
+				// var Files=Mongo.Collection.get(gridCollection+'.files');
+				// if (!Files) Files=new Meteor.Collection(gridCollection+'.files');
+	
+	
+				var query;
+	
+				if (result.id && result.id.length) {
+					if (debug) eyes({id:result.id});
+					query={'_id':new MongoInternals.NpmModule.ObjectID(result.id)};
+				} else {
+					query={'metadata.original':unescape(result.link)};
+					query['metadata.kind']=result.derivate?'derivate':'original';
+					if (result.derivate && result.derivate.hash) query['metadata.derivate.hash']=result.derivate.hash;
+				}
+	
+				if (debug) eyes({query});
+				var imageFiles=ImageFiles.find(query,{limit:1}).fetch();
+			}
+			if (cache && imageFiles && imageFiles[0]) {
+		
+				if (imageFiles[0].md5 === request.headers['if-none-match']) {
+			        response.writeHead(304, {});
+					response.end();
+					return callback(null,{done:'not-modified-etag'})
+				}
+		
+				let lastModified=moment(imageFiles[0].uploadDate).format('ddd, DD MMM YYYY HH:mm:ss')+' GMT';
+
+				if (lastModified === request.headers['if-modified-since']) {
+			        response.writeHead(304, {});
+					response.end();
+					return callback(null,{done:'not-modified-date'})
+				}
+		
+				// if (debug) eyes({imageFiles});
+				let options={
+					_id: new MongoInternals.NpmModule.ObjectID(imageFiles[0]._id.valueOf())//imageFiles[0]._id.valueOf(),
+				};
+				// if (debug) eyes({options});
+				var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
+		
+				gfs.createReadStream(options, function (error, readstream) {
+					if (error) {
+						callback(error);
+					} else {
+						if (readstream) {
+							// if (debug) eyes('pipe');
+							// if (debug) eyes({readstream,response});
+							var headers={
+								// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
+								'Server':'meteor',
+								'Date':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' CET',
+								'Content-Type': imageFiles[0].contentType,
+								'Content-Length': imageFiles[0].length,
+								'Last-Modified':lastModified,
+								'ETag':imageFiles[0].md5,
+								// 'Expires':moment(imageFiles[0].uploadDate).format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
+								'Expires':moment().add(1,'months').format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
+								'Max-Age':60*60*24*30,
+								'Cache-Control':'public; max-age=2678400',
+					        }
+							if (debug) eyes({myresponse:headers});
+					        response.writeHead(200, headers);
+							readstream.pipe(response);
+							callback(null,{done:'streamt'})
+						} else {
+							// Stream couldn't be created because a read lock was not available
+							callback(new Error('Stream couldn\'t be created because a read lock was not available'))
+						}
+					}
+				});
+			} else {
+				callback(null,result)
+			}
+		}
+	})
 }
 
 RouterLayer.ironRouter.route('/image/:id?', function() {
 	let self=this;
-	let imageUrl;
 	var cache=(self.request.query.cache==='false'?false:(self.request.headers['cache-control']==='no-cache'?false:true));
 
 	// if (debug) console.log( MongoInternals.defaultRemoteCollectionDriver().mongo);
 
 	// if (debug) eyes(self.request.query.url)
 	if (self.request.query.url || this.params.id) {
-		imageUrl = unescape(self.request.query.url);
 		
-		pipeCachedFile(this.params.id,imageUrl,null,self.request,self.response,function(err,myData) {
+		pipeCachedFile(this.params.id,null,self.request,self.response,function(err,myData) {
 			if (err) {
 				throw err;
-			} else if (myData) {
+			} else if (myData && myData.done) {
 				if (debug) eyes(myData);
 			} else {
+				if (debug) eyes(myData);
 				if (debug) eyes('request');
-				return request({uri:imageUrl,encoding:'binary'}, function(error, response, body) {
+				return request({uri:myData.link,encoding:'binary'}, function(error, response, body) {
+					if (error) throw error;
 					if (debug) eyes({response:response.headers});
 
-					var imageData=new Buffer(body,'binary');
-					try {
+					if (body) {
+						// eyes({body});
+						var imageData=new Buffer(body,'binary');
+						try {
 
-						var dim = imageSize(imageData);
-						if (debug) eyes({dim});
-						var type = imageType(imageData);
-						if (debug) eyes({type});
+							var dim = imageSize(imageData);
+							if (debug) eyes({dim});
+							var type = imageType(imageData);
+							if (debug) eyes({type});
 
-						// var imageData=new Buffer(file.toString(),'binary');
+							// var imageData=new Buffer(file.toString(),'binary');
 
-						if (debug) console.log('File out read.')
+							if (debug) console.log('File out read.')
 
-						if (err) throw err
+							if (err) throw err
 
 
-						var jid=new MongoInternals.NpmModule.ObjectID();
-						var urlParse=url.parse(imageUrl);
-						// if (debug) eyes({urlParse});
+							var jid=new MongoInternals.NpmModule.ObjectID();
+							var urlParse=url.parse(myData.link);
+							// if (debug) eyes({urlParse});
 
-						// var pathParse=path.parse(urlParse.pathname);
-						var baseName=path.basename(urlParse.pathname);
-						// if (debug) eyes({pathParse});
-						if (cache) {
-							var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
+							// var pathParse=path.parse(urlParse.pathname);
+							var baseName=path.basename(urlParse.pathname);
+							// if (debug) eyes({pathParse});
+							if (cache) {
+								var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
 					
-							var options={
-								_id:jid,
-								filename: baseName,
-								mode: 'w',
-								chunkSize: 1024,
-								content_type: type.mime,
-								root: gridCollection,
-								metadata: {
-									width:dim.width,
-									height:dim.height,
-									kind:'original',
-									original:imageUrl,
-									hash:hash(imageUrl),
-								},
-								aliases: []
-							}
-							if (self.request.query.title) options.metadata.title=self.request.query.title;
-							if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
-							if (self.request.query.description) options.metadata.description=self.request.query.description;
-							gfs.createWriteStream(options, function (error, writestream) {
-								if (writestream) {
-								    writestream.on('finish', function() {
-										if (debug) eyes({id:jid.toHexString(),finish:imageUrl});
-								    });
-
-									var bufferStream = new stream.PassThrough();
-									bufferStream.end( imageData );
-									bufferStream.pipe(writestream);
-
-								} else {
-									// Stream couldn't be created because a write lock was not available
+								var options={
+									_id:jid,
+									filename: baseName,
+									mode: 'w',
+									chunkSize: 1024,
+									content_type: type.mime,
+									root: gridCollection,
+									metadata: {
+										width:dim.width,
+										height:dim.height,
+										kind:'original',
+										original:myData.link,
+										hash:hash(myData.link),
+									},
+									aliases: []
 								}
-							});
+								for (var k in myData) options.metadata[k]=myData[k];
+								
+								if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+								gfs.createWriteStream(options, function (error, writestream) {
+									if (writestream) {
+									    writestream.on('finish', function() {
+											if (debug) eyes({id:jid.toHexString(),finish:myData.link});
+									    });
+
+										var bufferStream = new stream.PassThrough();
+										bufferStream.end( imageData );
+										bufferStream.pipe(writestream);
+
+									} else {
+										// Stream couldn't be created because a write lock was not available
+									}
+								});
+							}
+
+							// response.headers['Content-Length']=file.length;
+							// if (debug) eyes(response.headers);
+							// self.response.writeHead(response.statusCode,response.headers);
+							var headers={
+								// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
+								'Server':'meteor',
+								'Date':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' CET',
+								'Content-Type': response.headers['content-type'],
+								'Content-Length': imageData.length,
+								'Last-Modified':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
+								'ETag':crypto.createHash('md5').update(imageData).digest('hex'), //imageFiles[0].md5,
+								'Expires':moment().add(1,'months').format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
+								'Max-Age':60*60*24*30,
+								'Cache-Control':'public; max-age=2678400', // 1 month
+					        }
+							if (debug) eyes({response:headers});
+					        self.response.writeHead(200,headers);
+							self.response.write(imageData);
+					        self.response.end();
+
+							if (debug) console.log('done.')
+						} catch (e) {
+							eyes({e});
 						}
-
-						// response.headers['Content-Length']=file.length;
-						// if (debug) eyes(response.headers);
-						// self.response.writeHead(response.statusCode,response.headers);
-						var headers={
-							// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
-							'Server':'meteor',
-							'Date':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' CET',
-							'Content-Type': response.headers['content-type'],
-							'Content-Length': imageData.length,
-							'Last-Modified':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
-							'ETag':crypto.createHash('md5').update(imageData).digest('hex'), //imageFiles[0].md5,
-							'Expires':moment().add(1,'months').format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
-							'Max-Age':60*60*24*30,
-							'Cache-Control':'public; max-age=2678400', // 1 month
-				        }
-						if (debug) eyes({response:headers});
-				        self.response.writeHead(200,headers);
-						self.response.write(imageData);
-				        self.response.end();
-
-						if (debug) console.log('done.')
-					} catch (e) {
-						eyes({e});
 					}
 				})
 			}
@@ -323,7 +358,6 @@ RouterLayer.ironRouter.route('/image/:id?', function() {
 
 RouterLayer.ironRouter.route('/derivate/:id?', function() {
 	let self=this;
-	let imageUrl;
 	var cache=(self.request.query.cache==='false'?false:(self.request.headers['cache-control']==='no-cache'?false:true));
 	
 
@@ -331,7 +365,6 @@ RouterLayer.ironRouter.route('/derivate/:id?', function() {
 
 	// if (debug) eyes(self.request.query.url)
 	if (self.request.query.url || this.params.id) {
-		imageUrl = unescape(self.request.query.url);
 		
 		var derivate={method:self.request.query.method};
 		derivate.options={}
@@ -346,139 +379,140 @@ RouterLayer.ironRouter.route('/derivate/:id?', function() {
 		// }
 		derivate.hash=hash(derivate);
 		if (debug) eyes({derivate});
-		pipeCachedFile(this.params.id,imageUrl,derivate,self.request,self.response,function(err,myData) {
+		pipeCachedFile(this.params.id,derivate,self.request,self.response,function(err,myData) {
 			if (err) {
 				throw err;
-			} else if (myData) {
+			} else if (myData && myData.done) {
 				if (debug) eyes(myData);
 			} else {
 				if (debug) eyes('request');
-				return request({uri:imageUrl,encoding:'binary'}, function(error, response, body) {
-					// var imageData=new Buffer(body,'binary');
-					if (debug) eyes({headers:response.headers});
+				return request({uri:myData.link,encoding:'binary'}, function(error, response, body) {
+					if (error) throw error;
+					if (body) {
+						// var imageData=new Buffer(body,'binary');
+						if (debug) eyes({headers:response.headers});
 
-					tmp.file(function _tempFileCreated(err, inpath, infd, cleanupInTmpCallback) {
-						if (debug) console.log('File in: ', inpath);
-						if (debug) console.log('Filedescriptor in: ', infd);
-						tmp.file(function _tempFileCreated(err, outpath, outfd, cleanupOutTmpCallback) {
-							if (err) throw err;
+						tmp.file(function _tempFileCreated(err, inpath, infd, cleanupInTmpCallback) {
+							if (debug) console.log('File in: ', inpath);
+							if (debug) console.log('Filedescriptor in: ', infd);
+							tmp.file(function _tempFileCreated(err, outpath, outfd, cleanupOutTmpCallback) {
+								if (err) throw err;
 
-							if (debug) console.log('File out: ', outpath);
-							if (debug) console.log('Filedescriptor out: ', outfd);
+								if (debug) console.log('File out: ', outpath);
+								if (debug) console.log('Filedescriptor out: ', outfd);
 
-					        fs.writeFile(inpath,body, 'binary', function(err){
-					            if (err) throw err
-					            if (debug) console.log('File in saved.')
+						        fs.writeFile(inpath,body, 'binary', function(err){
+						            if (err) throw err
+						            if (debug) console.log('File in saved.')
 
-								var opts={
-									src:inpath,
-									dst:outpath,
-								}
-								
-								easyimg[derivate.method](_.extend(opts,derivate.options)).then(
-									function(image) {
-										if (debug) eyes({image});
-										if (debug) console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
-										// if (debug) eyes(response.statusCode);
-										// if (debug) eyes(response.headers);
-										if (!error && response && response.statusCode == 200) {
-											fs.readFile(outpath, 'binary', function (err, file) {
-
-												var imageData=new Buffer(file.toString(),'binary');
-
-												if (debug) console.log('File out read.')
-
-												if (err) throw err
-
-
-												var jid=new MongoInternals.NpmModule.ObjectID();
-												var urlParse=url.parse(imageUrl);
-												// if (debug) eyes({urlParse});
-
-												// var pathParse=path.parse(urlParse.pathname);
-												var baseName=path.basename(urlParse.pathname);
-												// if (debug) eyes({pathParse});
-												
-												if (cache) {
-													var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
-												
-													var options={
-														_id:jid,
-														filename: baseName,
-														mode: 'w',
-														chunkSize: 1024,
-														content_type: 'image/'+image.type,
-														root: gridCollection,
-														metadata: {
-															width:image.width,
-															height:image.height,
-															kind:'derivate',
-															original:imageUrl,
-															hash:hash(imageUrl),
-															derivate,
-														},
-														aliases: []
-													}
-													if (self.request.query.title) options.metadata.title=self.request.query.title;
-													if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
-														if (self.request.query.description) options.metadata.description=self.request.query.description;
-													gfs.createWriteStream(options, function (error, writestream) {
-														if (writestream) {
-														    writestream.on('finish', function() {
-																if (debug) eyes({id:jid.toHexString(),finish:imageUrl});
-														    });
-
-															var bufferStream = new stream.PassThrough();
-															bufferStream.end( imageData );
-															bufferStream.pipe(writestream);
-
-														} else {
-															// Stream couldn't be created because a write lock was not available
-														}
-													});
-												}
-
-												// response.headers['Content-Length']=file.length;
-												// if (debug) eyes(response.headers);
-												// self.response.writeHead(response.statusCode,response.headers);
-												var headers={
-													// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
-													'Server':'meteor',
-													'Date':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' CET',
-													'Content-Type': response.headers['content-type'],
-													'Content-Length': file.length,
-													'Last-Modified':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
-													'ETag':crypto.createHash('md5').update(imageData).digest('hex'), //imageFiles[0].md5,
-													'Expires':moment().add(1,'months').format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
-													'Max-Age':60*60*24*30,
-													'Cache-Control':'public; max-age=2678400', // 1 month
-										        }
-												if (debug) eyes({response:headers});
-										        self.response.writeHead(200,headers);
-												self.response.write(imageData);
-										        self.response.end();
-
-												cleanupInTmpCallback();
-												cleanupOutTmpCallback();
-												if (debug) console.log('done.')
-
-											});
-										} else {
-											self.response.writeHead(302,{'Location':'/img/notfound.png'});
-											self.response.end();
-										}
-									},
-									function (err) {
-										console.log(err);
+									var opts={
+										src:inpath,
+										dst:outpath,
 									}
-								);
+								
+									easyimg[derivate.method](_.extend(opts,derivate.options)).then(
+										function(image) {
+											if (debug) eyes({image});
+											if (debug) console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
+											// if (debug) eyes(response.statusCode);
+											// if (debug) eyes(response.headers);
+											if (!error && response && response.statusCode == 200) {
+												fs.readFile(outpath, 'binary', function (err, file) {
+
+													var imageData=new Buffer(file.toString(),'binary');
+
+													if (debug) console.log('File out read.')
+
+													if (err) throw err
 
 
-							})
-				        })
-					})
+													var jid=new MongoInternals.NpmModule.ObjectID();
+													var urlParse=url.parse(myData.link);
+													// if (debug) eyes({urlParse});
+
+													// var pathParse=path.parse(urlParse.pathname);
+													var baseName=path.basename(urlParse.pathname);
+													// if (debug) eyes({pathParse});
+												
+													if (cache) {
+														var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
+												
+														var options={
+															_id:jid,
+															filename: baseName,
+															mode: 'w',
+															chunkSize: 1024,
+															content_type: 'image/'+image.type,
+															root: gridCollection,
+															metadata: {
+																width:image.width,
+																height:image.height,
+																kind:'derivate',
+																original:myData.link,
+																hash:hash(myData.link),
+																derivate,
+															},
+															aliases: []
+														}
+														for (var k in myData) options.metadata[k]=myData[k];
+														if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+														gfs.createWriteStream(options, function (error, writestream) {
+															if (writestream) {
+															    writestream.on('finish', function() {
+																	if (debug) eyes({id:jid.toHexString(),finish:myData.link});
+															    });
+
+																var bufferStream = new stream.PassThrough();
+																bufferStream.end( imageData );
+																bufferStream.pipe(writestream);
+
+															} else {
+																// Stream couldn't be created because a write lock was not available
+															}
+														});
+													}
+
+													// response.headers['Content-Length']=file.length;
+													// if (debug) eyes(response.headers);
+													// self.response.writeHead(response.statusCode,response.headers);
+													var headers={
+														// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
+														'Server':'meteor',
+														'Date':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' CET',
+														'Content-Type': response.headers['content-type'],
+														'Content-Length': file.length,
+														'Last-Modified':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
+														'ETag':crypto.createHash('md5').update(imageData).digest('hex'), //imageFiles[0].md5,
+														'Expires':moment().add(1,'months').format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
+														'Max-Age':60*60*24*30,
+														'Cache-Control':'public; max-age=2678400', // 1 month
+											        }
+													if (debug) eyes({response:headers});
+											        self.response.writeHead(200,headers);
+													self.response.write(imageData);
+											        self.response.end();
+
+													cleanupInTmpCallback();
+													cleanupOutTmpCallback();
+													if (debug) console.log('done.')
+
+												});
+											} else {
+												self.response.writeHead(302,{'Location':'/img/notfound.png'});
+												self.response.end();
+											}
+										},
+										function (err) {
+											console.log(err);
+										}
+									);
 
 
+								})
+					        })
+						})
+					}
+						
 
 				})
 			}
