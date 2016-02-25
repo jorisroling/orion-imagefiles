@@ -306,8 +306,8 @@ RouterLayer.ironRouter.route('/image/:id?', function() {
 									aliases: []
 								}
 								for (var k in myData) options.metadata[k]=myData[k];
-								
-								if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+								if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+									
 								gfs.createWriteStream(options, function (error, writestream) {
 									if (writestream) {
 									    writestream.on('finish', function() {

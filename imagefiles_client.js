@@ -47,6 +47,22 @@ var rndImage = function(callback) {
 	}
 }
 
+function clear_html(html)
+{
+	return html.replace(/(<([^>]+)>)/ig,'');
+}
+
+function excerpt(html,count)
+{	
+	var text=clear_html(html).substring(0,count).trim();
+	var olength=text.length;
+	while (text && text.length && !/[\s\.\,]$/.test(text)) text=text.substr(0,text.length-1);
+	text=text.trim()
+	if (/[\s\.\,]$/.test(text)) text=text.substr(0,text.length-1);
+	text=text.trim();
+	return text+(text.length<(olength-2)?'&hellip;':'');
+}
+
 var IMAGE_FILES_INCREMENT = 6;
 
 // whenever #imageFilesShowMoreResults becomes visible, retrieve more results
@@ -182,15 +198,20 @@ Template.imageFileCard.helpers({
 	},
 	title() {
 		if (this.metadata && typeof this.metadata.title=='string') {
-			return this.metadata.title.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+			return this.metadata.title.replace(/[0-9]{5,32}/g,'').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 		}
 		if (typeof this.filename=='string') {
-			return this.filename.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+			return this.filename.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 		}
 	},
 	description() {
 		if (this.metadata && typeof this.metadata.description=='string') {
-			return this.metadata.description;
+			return clear_html(this.metadata.description);
+		}
+	},
+	excerpt() {
+		if (this.metadata && typeof this.metadata.description=='string') {
+			return excerpt(this.metadata.description);
 		}
 	}
 });

@@ -38,11 +38,11 @@
 			<!-- {{{eyes this}}} -->
 			<span aria-hidden="true" class="imageFileRemove pull-right">&times;</span>
 	        <h3>{{title}}</h3>
-			<img src="/image/{{id}}" data-toggle="lightbox" class="img-responsive" data-title="{{title}}" />
-			<!-- <img src="{{metadata.original}}" data-toggle="lightbox" class="img-responsive"/> -->
+				<img src="/image/{{id}}" data-toggle="lightbox" class="img-responsive center-block" data-title="{{title}}" />
+				<!-- <img src="{{metadata.original}}" data-toggle="lightbox" class="img-responsive"/> -->
 	        <p>
-				{{#if description}}
-					{{description}}
+				{{#if excerpt}}
+					{{{excerpt}}}
 				{{else}}
 					<a href="{{metadata.original}}">{{metadata.kind}}</a>
 				{{/if}}
