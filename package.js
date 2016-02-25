@@ -1,7 +1,7 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '1.0.20',
+	version: '1.0.21',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
