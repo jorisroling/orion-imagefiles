@@ -1,6 +1,9 @@
 var debug=false;
 Meteor.startup(function() {
-	ImageFiles._ensureIndex({'filename':'text','metadata.original':'text','metadata.title':'text','metadata.description':'text'},{unique:false,background: true});
+	// ImageFiles._ensureIndex({'filename':'text','metadata.original':'text','metadata.title':'text','metadata.description':'text'},{unique:false,background: true});
+	ImageFiles._ensureIndex({'metadata.original':1,'metadata.kind':1,'metadata.derivate.hash':1},{unique:false,background: true});
+	ImageFiles._ensureIndex({'$**':'text','uploadDate':-1},{unique:false,background: true});
+	
 });
 
 Meteor.publish('image.files', function(limit, search) {
@@ -262,15 +265,25 @@ RouterLayer.ironRouter.route('/image/:id?', function() {
 					if (error) throw error;
 					if (debug) eyes({response:response.headers});
 
-					if (body) {
+					if (body && response.statusCode==200) {
 						// eyes({body});
 						var imageData=new Buffer(body,'binary');
 						try {
+							var type;
+							try {
+								type = imageType(imageData);
+								if (debug) eyes({type});
+							} catch (e) {
+								eyes({e});
+							}
 
-							var dim = imageSize(imageData);
-							if (debug) eyes({dim});
-							var type = imageType(imageData);
-							if (debug) eyes({type});
+							var dim;
+							try {
+								dim = imageSize(imageData);
+								if (debug) eyes({dim});
+							} catch (e) {
+								eyes({link:myData.link,type,e,body});
+							}
 
 							// var imageData=new Buffer(file.toString(),'binary');
 
@@ -279,7 +292,7 @@ RouterLayer.ironRouter.route('/image/:id?', function() {
 							if (err) throw err
 
 
-							var jid=new MongoInternals.NpmModule.ObjectID();
+							var fileID=new MongoInternals.NpmModule.ObjectID();
 							var urlParse=url.parse(myData.link);
 							// if (debug) eyes({urlParse});
 
@@ -290,28 +303,31 @@ RouterLayer.ironRouter.route('/image/:id?', function() {
 								var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
 					
 								var options={
-									_id:jid,
+									_id:fileID,
 									filename: baseName,
 									mode: 'w',
 									chunkSize: 1024,
-									content_type: type.mime,
+									content_type: type && type.mime,
 									root: gridCollection,
 									metadata: {
-										width:dim.width,
-										height:dim.height,
+										width: dim && dim.width,
+										height:dim && dim.height,
 										kind:'original',
 										original:myData.link,
 										hash:hash(myData.link),
 									},
 									aliases: []
 								}
+								// if (dim && dim.width) options.metadata.width=dim.width;
+								// if (dim && dim.height) options.metadata.height=dim.height;
+								
 								for (var k in myData) options.metadata[k]=myData[k];
 								if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
 									
 								gfs.createWriteStream(options, function (error, writestream) {
 									if (writestream) {
 									    writestream.on('finish', function() {
-											if (debug) eyes({id:jid.toHexString(),finish:myData.link});
+											if (debug) eyes({id:fileID.toHexString(),finish:myData.link});
 									    });
 
 										var bufferStream = new stream.PassThrough();
@@ -348,6 +364,10 @@ RouterLayer.ironRouter.route('/image/:id?', function() {
 						} catch (e) {
 							eyes({e});
 						}
+					} else {
+						self.response.writeHead(response.statusCode,response.headers);
+						if (body) self.response.write(body);
+				        self.response.end();
 					}
 				})
 			}
@@ -388,7 +408,7 @@ RouterLayer.ironRouter.route('/derivate/:id?', function() {
 				if (debug) eyes('request');
 				return request({uri:myData.link,encoding:'binary'}, function(error, response, body) {
 					if (error) throw error;
-					if (body) {
+					if (body && response.statusCode==200) {
 						// var imageData=new Buffer(body,'binary');
 						if (debug) eyes({headers:response.headers});
 
@@ -426,7 +446,7 @@ RouterLayer.ironRouter.route('/derivate/:id?', function() {
 													if (err) throw err
 
 
-													var jid=new MongoInternals.NpmModule.ObjectID();
+													var fileID=new MongoInternals.NpmModule.ObjectID();
 													var urlParse=url.parse(myData.link);
 													// if (debug) eyes({urlParse});
 
@@ -438,7 +458,7 @@ RouterLayer.ironRouter.route('/derivate/:id?', function() {
 														var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
 												
 														var options={
-															_id:jid,
+															_id:fileID,
 															filename: baseName,
 															mode: 'w',
 															chunkSize: 1024,
@@ -459,7 +479,7 @@ RouterLayer.ironRouter.route('/derivate/:id?', function() {
 														gfs.createWriteStream(options, function (error, writestream) {
 															if (writestream) {
 															    writestream.on('finish', function() {
-																	if (debug) eyes({id:jid.toHexString(),finish:myData.link});
+																	if (debug) eyes({id:fileID.toHexString(),finish:myData.link});
 															    });
 
 																var bufferStream = new stream.PassThrough();
@@ -511,9 +531,11 @@ RouterLayer.ironRouter.route('/derivate/:id?', function() {
 								})
 					        })
 						})
+					} else {
+						self.response.writeHead(response.statusCode,response.headers);
+						if (body) self.response.write(body);
+				        self.response.end();
 					}
-						
-
 				})
 			}
 		})
