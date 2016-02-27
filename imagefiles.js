@@ -22,3 +22,5 @@ RouterLayer.route('/admin/imagefiles', {
  * Ensure user is logged in
  */
 orion.accounts.addProtectedRoute('jorisroling.orionImageFiles');
+
+ImageFilesCollection = new Meteor.Collection('image.files');

@@ -1,7 +1,7 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '1.0.25',
+	version: '1.0.26',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
@@ -20,7 +20,7 @@ Package.onUse(function(api) {
 
 	api.use([
 		'tmeasday:publish-counts@0.7.3',
-		'dburles:mongo-collection-instances@0.3.5',
+		// 'dburles:mongo-collection-instances@0.3.5',
 	]);
 	
 
@@ -36,9 +36,11 @@ Package.onUse(function(api) {
 		"object-hash": "1.1.2",
 		"image-type": "2.1.0",
 		"image-size":"0.4.0",
+		"async":"1.5.2",
 	});
 
 
 	
-	// api.export('ImageFiles');
+	api.export('ImageFiles','server');
+	api.export('ImageFilesCollection','server');
 });
