@@ -361,7 +361,9 @@ ImageFiles.ensureImage=function(myData,callback)
 						// if (dim && dim.height) options.metadata.height=dim.height;
 			
 						for (var k in myData) if (k!='link' && k!='cache') options.metadata[k]=myData[k];
-						if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+						if (!options.metadata.name) options.metadata.name=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+						if (!options.metadata.title) options.metadata.title=options.metadata.name;
+						
 				
 						gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
 							if (writestream) {
@@ -471,7 +473,8 @@ ImageFiles.routeOriginal=function(context,myData) {
 									// if (dim && dim.height) options.metadata.height=dim.height;
 								
 									for (var k in myData) if (k!='link' && k!='cache') options.metadata[k]=myData[k];
-									if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+									if (!options.metadata.name) options.metadata.name=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+									if (!options.metadata.title) options.metadata.title=options.metadata.name;
 									
 									gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
 										if (writestream) {
@@ -516,7 +519,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 						} else {
 							self.response.writeHead(response.statusCode,response.headers);
 							if (body) self.response.write(body);
-									self.response.end();
+							self.response.end();
 						}
 					}))
 				}
@@ -526,7 +529,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 		eyes({exception: e});
 		self.response.writeHead(500,{});
 		self.response.write("Internal Server Error");
-				self.response.end();
+		self.response.end();
 	}
 }
 
@@ -656,8 +659,11 @@ ImageFiles.routeDerivate=function(context,myData) {
 
 													}));
 												} else {
-													self.response.writeHead(302,{'Location':'/img/notfound.png'});
+													self.response.writeHead(500,{});
+													self.response.write("Internal Server Error");
 													self.response.end();
+													// self.response.writeHead(302,{'Location':'/img/notfound.png'});
+													// self.response.end();
 												}
 											}),
 											function (err) {
