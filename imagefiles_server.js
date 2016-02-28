@@ -300,101 +300,105 @@ ImageFiles.ensureImage=function(myData,callback)
 		if (imageFiles && imageFiles[0]) {
 			callback(null,imageFiles[0])
 		} else {
-			return request({uri:myData.link,encoding:'binary'}, Meteor.bindEnvironment(function(error, response, body) {
-				if (error) callback(error);
-				if (debug) eyes({response:response.headers});
+			var urlParse=url.parse(myData.link);
+			if (urlParse.hostname && urlParse.protocol) {
+				return request({uri:myData.link,encoding:'binary'}, Meteor.bindEnvironment(function(error, response, body) {
+					if (error) callback(error);
+					if (debug) eyes({response:response.headers});
 
-				if (body && response.statusCode==200) {
-					// eyes({body});
-					var imageData=new Buffer(body,'binary');
-					try {
-						var type;
+					if (body && response.statusCode==200) {
+						// eyes({body});
+						var imageData=new Buffer(body,'binary');
 						try {
-							type = imageType(imageData);
-							if (debug) eyes({type});
-						} catch (e) {
-							eyes({e});
-						}
+							var type;
+							try {
+								type = imageType(imageData);
+								if (debug) eyes({type});
+							} catch (e) {
+								eyes({e});
+							}
 
-						var dim;
-						try {
-							dim = imageSize(imageData);
-							if (debug) eyes({dim});
-						} catch (e) {
-							eyes({link:myData.link,type,e,body});
-						}
+							var dim;
+							try {
+								dim = imageSize(imageData);
+								if (debug) eyes({dim});
+							} catch (e) {
+								eyes({link:myData.link,type,e,body});
+							}
 
-						// var imageData=new Buffer(file.toString(),'binary');
+							// var imageData=new Buffer(file.toString(),'binary');
 
-						if (debug) console.log('File out read.')
+							if (debug) console.log('File out read.')
 
-						// if (err) throw err
+							// if (err) throw err
 
 
-						var fileID=new MongoInternals.NpmModule.ObjectID();
-						var urlParse=url.parse(myData.link);
-						// if (debug) eyes({urlParse});
+							var fileID=new MongoInternals.NpmModule.ObjectID();
+							// if (debug) eyes({urlParse});
 
-						// var pathParse=path.parse(urlParse.pathname);
-						var baseName=path.basename(urlParse.pathname);
-						// if (debug) eyes({pathParse});
+							// var pathParse=path.parse(urlParse.pathname);
+							var baseName=path.basename(urlParse.pathname);
+							// if (debug) eyes({pathParse});
 
-						var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
+							var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
 
-						var options={
-							_id:fileID,
-							filename: baseName,
-							mode: 'w',
-							chunkSize: 1024,
-							content_type: type && type.mime,
-							root: gridCollection,
-							metadata: {
-								width: dim && dim.width,
-								height:dim && dim.height,
-								kind:'original',
-								original:myData.link,
-								hash:hash(myData.link),
-							},
-							aliases: []
-						}
-						// if (dim && dim.width) options.metadata.width=dim.width;
-						// if (dim && dim.height) options.metadata.height=dim.height;
+							var options={
+								_id:fileID,
+								filename: baseName,
+								mode: 'w',
+								chunkSize: 1024,
+								content_type: type && type.mime,
+								root: gridCollection,
+								metadata: {
+									width: dim && dim.width,
+									height:dim && dim.height,
+									kind:'original',
+									original:myData.link,
+									hash:hash(myData.link),
+								},
+								aliases: []
+							}
+							// if (dim && dim.width) options.metadata.width=dim.width;
+							// if (dim && dim.height) options.metadata.height=dim.height;
 			
-						for (var k in myData) if (k!='link' && k!='cache') options.metadata[k]=myData[k];
-						if (!options.metadata.name) options.metadata.name=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
-						if (!options.metadata.title) options.metadata.title=options.metadata.name;
+							for (var k in myData) if (k!='link' && k!='cache') options.metadata[k]=myData[k];
+							if (!options.metadata.name) options.metadata.name=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+							if (!options.metadata.title) options.metadata.title=options.metadata.name;
 						
 				
-						gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
-							if (writestream) {
-								writestream.on('finish',Meteor.bindEnvironment(function() {
-									if (debug) eyes({id:fileID.toHexString(),finish:myData.link});
+							gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
+								if (writestream) {
+									writestream.on('finish',Meteor.bindEnvironment(function() {
+										if (debug) eyes({id:fileID.toHexString(),finish:myData.link});
 								
-									var imageFiles=ImageFilesCollection.find(query,{limit:1}).fetch();
-									if (imageFiles && imageFiles[0]) {
-										callback(null,imageFiles[0])
-									} else {
-										callback(new Error('Image should have been stored'));
-									}
-								}));
+										var imageFiles=ImageFilesCollection.find(query,{limit:1}).fetch();
+										if (imageFiles && imageFiles[0]) {
+											callback(null,imageFiles[0])
+										} else {
+											callback(new Error('Image should have been stored'));
+										}
+									}));
 
-								var bufferStream = new stream.PassThrough();
-								bufferStream.end( imageData );
-								bufferStream.pipe(writestream);
-							} else {
-								// Stream couldn't be created because a write lock was not available
-								callback(new Error('Stream couldn\'t be created because a write lock was not available'));
-							}
-						}));
+									var bufferStream = new stream.PassThrough();
+									bufferStream.end( imageData );
+									bufferStream.pipe(writestream);
+								} else {
+									// Stream couldn't be created because a write lock was not available
+									callback(new Error('Stream couldn\'t be created because a write lock was not available'));
+								}
+							}));
 
-					} catch (e) {
-						eyes({e});
-						callback(new Error(e.message));
+						} catch (e) {
+							eyes({e});
+							callback(new Error(e.message));
+						}
+					} else {
+						callback(new Error('No image'))
 					}
-				} else {
-					callback(new Error('No image'))
-				}
-			}))
+				}))
+			} else {
+				callback(new Error('Image not found'))
+			}
 		}
 	} catch (e) {
 		eyes({e});
@@ -415,113 +419,119 @@ ImageFiles.routeOriginal=function(context,myData) {
 				} else {
 					if (debug) eyes(myData);
 					if (debug) eyes('request');
-					return request({uri:myData.link,encoding:'binary'},Meteor.bindEnvironment(function(error, response, body) {
-						if (error) throw error;
-						if (debug) eyes({response:response.headers});
+					var urlParse=url.parse(myData.link);
+					if (urlParse.hostname && urlParse.protocol) {
+						return request({uri:myData.link,encoding:'binary'},Meteor.bindEnvironment(function(error, response, body) {
+							if (error) throw error;
+							if (debug) eyes({response:response.headers});
 
-						if (body && response.statusCode==200) {
-							// eyes({body});
-							var imageData=new Buffer(body,'binary');
-							try {
-								var type;
+							if (body && response.statusCode==200) {
+								// eyes({body});
+								var imageData=new Buffer(body,'binary');
 								try {
-									type = imageType(imageData);
-									if (debug) eyes({type});
+									var type;
+									try {
+										type = imageType(imageData);
+										if (debug) eyes({type});
+									} catch (e) {
+										eyes({e});
+									}
+
+									var dim;
+									try {
+										dim = imageSize(imageData);
+										if (debug) eyes({dim});
+									} catch (e) {
+										eyes({link:myData.link,type,e,body});
+									}
+
+									// var imageData=new Buffer(file.toString(),'binary');
+
+									if (debug) console.log('File out read.')
+
+									var fileID=new MongoInternals.NpmModule.ObjectID();
+									// if (debug) eyes({urlParse});
+
+									// var pathParse=path.parse(urlParse.pathname);
+									var baseName=path.basename(urlParse.pathname);
+									// if (debug) eyes({pathParse});
+									if (myData.cache) {
+										var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
+					
+										var options={
+											_id:fileID,
+											filename: baseName,
+											mode: 'w',
+											chunkSize: 1024,
+											content_type: type && type.mime,
+											root: gridCollection,
+											metadata: {
+												width: dim && dim.width,
+												height:dim && dim.height,
+												kind:'original',
+												original:myData.link,
+												hash:hash(myData.link),
+											},
+											aliases: []
+										}
+										// if (dim && dim.width) options.metadata.width=dim.width;
+										// if (dim && dim.height) options.metadata.height=dim.height;
+								
+										for (var k in myData) if (k!='link' && k!='cache') options.metadata[k]=myData[k];
+										if (!options.metadata.name) options.metadata.name=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+										if (!options.metadata.title) options.metadata.title=options.metadata.name;
+									
+										gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
+											if (writestream) {
+												writestream.on('finish', function() {
+													if (debug) eyes({id:fileID.toHexString(),finish:myData.link});
+												});
+
+												var bufferStream = new stream.PassThrough();
+												bufferStream.end( imageData );
+												bufferStream.pipe(writestream);
+
+											} else {
+												// Stream couldn't be created because a write lock was not available
+											}
+										}));
+									}
+
+									// response.headers['Content-Length']=file.length;
+									// if (debug) eyes(response.headers);
+									// self.response.writeHead(response.statusCode,response.headers);
+									var headers={
+										// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
+										'Server':'meteor',
+										'Date':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' CET',
+										'Content-Type': response.headers['content-type'],
+										'Content-Length': imageData.length,
+										'Last-Modified':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
+										'ETag':crypto.createHash('md5').update(imageData).digest('hex'), //imageFiles[0].md5,
+										'Expires':moment().add(1,'months').format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
+										'Max-Age':60*60*24*30,
+										'Cache-Control':'public; max-age=2678400', // 1 month
+									}
+									if (debug) eyes({response:headers});
+									self.response.writeHead(200,headers);
+									self.response.write(imageData);
+									self.response.end();
+
+									if (debug) console.log('done.')
 								} catch (e) {
 									eyes({e});
 								}
-
-								var dim;
-								try {
-									dim = imageSize(imageData);
-									if (debug) eyes({dim});
-								} catch (e) {
-									eyes({link:myData.link,type,e,body});
-								}
-
-								// var imageData=new Buffer(file.toString(),'binary');
-
-								if (debug) console.log('File out read.')
-
-								var fileID=new MongoInternals.NpmModule.ObjectID();
-								var urlParse=url.parse(myData.link);
-								// if (debug) eyes({urlParse});
-
-								// var pathParse=path.parse(urlParse.pathname);
-								var baseName=path.basename(urlParse.pathname);
-								// if (debug) eyes({pathParse});
-								if (myData.cache) {
-									var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
-					
-									var options={
-										_id:fileID,
-										filename: baseName,
-										mode: 'w',
-										chunkSize: 1024,
-										content_type: type && type.mime,
-										root: gridCollection,
-										metadata: {
-											width: dim && dim.width,
-											height:dim && dim.height,
-											kind:'original',
-											original:myData.link,
-											hash:hash(myData.link),
-										},
-										aliases: []
-									}
-									// if (dim && dim.width) options.metadata.width=dim.width;
-									// if (dim && dim.height) options.metadata.height=dim.height;
-								
-									for (var k in myData) if (k!='link' && k!='cache') options.metadata[k]=myData[k];
-									if (!options.metadata.name) options.metadata.name=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
-									if (!options.metadata.title) options.metadata.title=options.metadata.name;
-									
-									gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
-										if (writestream) {
-											writestream.on('finish', function() {
-												if (debug) eyes({id:fileID.toHexString(),finish:myData.link});
-											});
-
-											var bufferStream = new stream.PassThrough();
-											bufferStream.end( imageData );
-											bufferStream.pipe(writestream);
-
-										} else {
-											// Stream couldn't be created because a write lock was not available
-										}
-									}));
-								}
-
-								// response.headers['Content-Length']=file.length;
-								// if (debug) eyes(response.headers);
-								// self.response.writeHead(response.statusCode,response.headers);
-								var headers={
-									// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
-									'Server':'meteor',
-									'Date':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' CET',
-									'Content-Type': response.headers['content-type'],
-									'Content-Length': imageData.length,
-									'Last-Modified':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
-									'ETag':crypto.createHash('md5').update(imageData).digest('hex'), //imageFiles[0].md5,
-									'Expires':moment().add(1,'months').format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
-									'Max-Age':60*60*24*30,
-									'Cache-Control':'public; max-age=2678400', // 1 month
-								}
-								if (debug) eyes({response:headers});
-								self.response.writeHead(200,headers);
-								self.response.write(imageData);
+							} else {
+								self.response.writeHead(response.statusCode,response.headers);
+								if (body) self.response.write(body);
 								self.response.end();
-
-								if (debug) console.log('done.')
-							} catch (e) {
-								eyes({e});
 							}
-						} else {
-							self.response.writeHead(response.statusCode,response.headers);
-							if (body) self.response.write(body);
-							self.response.end();
-						}
-					}))
+						}))
+					} else {
+						self.response.writeHead(404,{});
+						self.response.write("Not Found");
+						self.response.end();
+					}
 				}
 			})
 		}
@@ -546,139 +556,145 @@ ImageFiles.routeDerivate=function(context,myData) {
 					if (debug) eyes(myData);
 				} else {
 					if (debug) eyes('request');
-					return request({uri:myData.link,encoding:'binary'},Meteor.bindEnvironment(function(error, response, body) {
-						if (error) throw error;
-						if (body && response.statusCode==200) {
-							// var imageData=new Buffer(body,'binary');
-							if (debug) eyes({headers:response.headers});
+					var urlParse=url.parse(myData.link);
+					if (urlParse.hostname && urlParse.protocol) {
+						return request({uri:myData.link,encoding:'binary'},Meteor.bindEnvironment(function(error, response, body) {
+							if (error) throw error;
+							if (body && response.statusCode==200) {
+								// var imageData=new Buffer(body,'binary');
+								if (debug) eyes({headers:response.headers});
 
-							tmp.file(Meteor.bindEnvironment(function _tempFileCreated(err, inpath, infd, cleanupInTmpCallback) {
-								if (debug) console.log('File in: ', inpath);
-								if (debug) console.log('Filedescriptor in: ', infd);
-								tmp.file(Meteor.bindEnvironment(function _tempFileCreated(err, outpath, outfd, cleanupOutTmpCallback) {
-									if (err) throw err;
+								tmp.file(Meteor.bindEnvironment(function _tempFileCreated(err, inpath, infd, cleanupInTmpCallback) {
+									if (debug) console.log('File in: ', inpath);
+									if (debug) console.log('Filedescriptor in: ', infd);
+									tmp.file(Meteor.bindEnvironment(function _tempFileCreated(err, outpath, outfd, cleanupOutTmpCallback) {
+										if (err) throw err;
 
-									if (debug) console.log('File out: ', outpath);
-									if (debug) console.log('Filedescriptor out: ', outfd);
+										if (debug) console.log('File out: ', outpath);
+										if (debug) console.log('Filedescriptor out: ', outfd);
 
-									fs.writeFile(inpath,body, 'binary',Meteor.bindEnvironment(function(err){
-										if (err) throw err
-										if (debug) console.log('File in saved.')
+										fs.writeFile(inpath,body, 'binary',Meteor.bindEnvironment(function(err){
+											if (err) throw err
+											if (debug) console.log('File in saved.')
 
-										var opts={
-											src:inpath,
-											dst:outpath,
-										}
-										eyes({options:_.extend(opts,myData.derivate.options)})
-										easyimg[myData.derivate.method](_.extend(opts,myData.derivate.options)).then(
-											Meteor.bindEnvironment(function(image) {
-												if (debug) eyes({image});
-												if (debug) console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
-												// if (debug) eyes(response.statusCode);
-												// if (debug) eyes(response.headers);
-												if (!error && response && response.statusCode == 200) {
-													fs.readFile(outpath, 'binary', Meteor.bindEnvironment(function (err, file) {
-
-														var imageData=new Buffer(file.toString(),'binary');
-
-														if (debug) console.log('File out read.')
-
-														if (err) throw err
-
-
-														var fileID=new MongoInternals.NpmModule.ObjectID();
-														var urlParse=url.parse(myData.link);
-														// if (debug) eyes({urlParse});
-
-														// var pathParse=path.parse(urlParse.pathname);
-														var baseName=path.basename(urlParse.pathname);
-														// if (debug) eyes({pathParse});
-												
-														if (myData.cache) {
-															var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
-												
-															var options={
-																_id:fileID,
-																filename: baseName,
-																mode: 'w',
-																chunkSize: 1024,
-																content_type: 'image/'+image.type,
-																root: gridCollection,
-																metadata: {
-																	width:image.width,
-																	height:image.height,
-																	kind:'derivate',
-																	original:myData.link,
-																	hash:hash(myData.link),
-																	derivate:myData.derivate,
-																},
-																aliases: []
-															}
-															// eyes({myData});
-															for (var k in myData) if (k!='link' && k!='cache') options.metadata[k]=myData[k];
-															if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
-															gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
-																if (writestream) {
-																		writestream.on('finish', function() {
-																		if (debug) eyes({id:fileID.toHexString(),finish:myData.link});
-																		});
-
-																	var bufferStream = new stream.PassThrough();
-																	bufferStream.end( imageData );
-																	bufferStream.pipe(writestream);
-
-																} else {
-																	// Stream couldn't be created because a write lock was not available
-																}
-															}));
-														}
-
-														// response.headers['Content-Length']=file.length;
-														// if (debug) eyes(response.headers);
-														// self.response.writeHead(response.statusCode,response.headers);
-														var headers={
-															// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
-															'Server':'meteor',
-															'Date':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' CET',
-															'Content-Type': response.headers['content-type'],
-															'Content-Length': file.length,
-															'Last-Modified':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
-															'ETag':crypto.createHash('md5').update(imageData).digest('hex'), //imageFiles[0].md5,
-															'Expires':moment().add(1,'months').format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
-															'Max-Age':60*60*24*30,
-															'Cache-Control':'public; max-age=2678400', // 1 month
-																}
-														if (debug) eyes({response:headers});
-																self.response.writeHead(200,headers);
-														self.response.write(imageData);
-																self.response.end();
-
-														cleanupInTmpCallback();
-														cleanupOutTmpCallback();
-														if (debug) console.log('done.')
-
-													}));
-												} else {
-													self.response.writeHead(500,{});
-													self.response.write("Internal Server Error");
-													self.response.end();
-													// self.response.writeHead(302,{'Location':'/img/notfound.png'});
-													// self.response.end();
-												}
-											}),
-											function (err) {
-												console.log(err);
+											var opts={
+												src:inpath,
+												dst:outpath,
 											}
-										);
+											eyes({options:_.extend(opts,myData.derivate.options)})
+											easyimg[myData.derivate.method](_.extend(opts,myData.derivate.options)).then(
+												Meteor.bindEnvironment(function(image) {
+													if (debug) eyes({image});
+													if (debug) console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
+													// if (debug) eyes(response.statusCode);
+													// if (debug) eyes(response.headers);
+													if (!error && response && response.statusCode == 200) {
+														fs.readFile(outpath, 'binary', Meteor.bindEnvironment(function (err, file) {
+
+															var imageData=new Buffer(file.toString(),'binary');
+
+															if (debug) console.log('File out read.')
+
+															if (err) throw err
+
+
+															var fileID=new MongoInternals.NpmModule.ObjectID();
+															// if (debug) eyes({urlParse});
+
+															// var pathParse=path.parse(urlParse.pathname);
+															var baseName=path.basename(urlParse.pathname);
+															// if (debug) eyes({pathParse});
+												
+															if (myData.cache) {
+																var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
+												
+																var options={
+																	_id:fileID,
+																	filename: baseName,
+																	mode: 'w',
+																	chunkSize: 1024,
+																	content_type: 'image/'+image.type,
+																	root: gridCollection,
+																	metadata: {
+																		width:image.width,
+																		height:image.height,
+																		kind:'derivate',
+																		original:myData.link,
+																		hash:hash(myData.link),
+																		derivate:myData.derivate,
+																	},
+																	aliases: []
+																}
+																// eyes({myData});
+																for (var k in myData) if (k!='link' && k!='cache') options.metadata[k]=myData[k];
+																if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
+																gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
+																	if (writestream) {
+																			writestream.on('finish', function() {
+																			if (debug) eyes({id:fileID.toHexString(),finish:myData.link});
+																			});
+
+																		var bufferStream = new stream.PassThrough();
+																		bufferStream.end( imageData );
+																		bufferStream.pipe(writestream);
+
+																	} else {
+																		// Stream couldn't be created because a write lock was not available
+																	}
+																}));
+															}
+
+															// response.headers['Content-Length']=file.length;
+															// if (debug) eyes(response.headers);
+															// self.response.writeHead(response.statusCode,response.headers);
+															var headers={
+																// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
+																'Server':'meteor',
+																'Date':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' CET',
+																'Content-Type': response.headers['content-type'],
+																'Content-Length': file.length,
+																'Last-Modified':moment().format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
+																'ETag':crypto.createHash('md5').update(imageData).digest('hex'), //imageFiles[0].md5,
+																'Expires':moment().add(1,'months').format('ddd, DD MMM YYYY HH:mm:ss')+' GMT',
+																'Max-Age':60*60*24*30,
+																'Cache-Control':'public; max-age=2678400', // 1 month
+																	}
+															if (debug) eyes({response:headers});
+																	self.response.writeHead(200,headers);
+															self.response.write(imageData);
+																	self.response.end();
+
+															cleanupInTmpCallback();
+															cleanupOutTmpCallback();
+															if (debug) console.log('done.')
+
+														}));
+													} else {
+														self.response.writeHead(500,{});
+														self.response.write("Internal Server Error");
+														self.response.end();
+														// self.response.writeHead(302,{'Location':'/img/notfound.png'});
+														// self.response.end();
+													}
+												}),
+												function (err) {
+													console.log(err);
+												}
+											);
+										}))
 									}))
 								}))
-							}))
-						} else {
-							self.response.writeHead(response.statusCode,response.headers);
-							if (body) self.response.write(body);
-							self.response.end();
-						}
-					}))
+							} else {
+								self.response.writeHead(response.statusCode,response.headers);
+								if (body) self.response.write(body);
+								self.response.end();
+							}
+						}))
+					} else {
+						self.response.writeHead(404,{});
+						self.response.write("Not Found");
+						self.response.end();
+					}
 				}
 			})
 		}
@@ -686,7 +702,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 		eyes({exception: e});
 		self.response.writeHead(500,{});
 		self.response.write("Internal Server Error");
-				self.response.end();
+		self.response.end();
 	}
 }
 
