@@ -709,10 +709,16 @@ ImageFiles.routeDerivate=function(context,myData) {
 RouterLayer.ironRouter.route('/image/:id?', function() {
 	var self=this;
 	preProcess(ImageFiles.collection,self.params.id,self.request,function(err,myData) {
-		if (myData.derivate) {
-			ImageFiles.routeDerivate(self,myData);
+		if (err || !myData) {
+			self.response.writeHead(404,{});
+			self.response.write("Not Found");
+			self.response.end();
 		} else {
-			ImageFiles.routeOriginal(self,myData);
+			if (myData && myData.derivate) {
+				ImageFiles.routeDerivate(self,myData);
+			} else {
+				ImageFiles.routeOriginal(self,myData);
+			}
 		}
 	});
 }, {where: 'server'});
@@ -720,10 +726,16 @@ RouterLayer.ironRouter.route('/image/:id?', function() {
 RouterLayer.ironRouter.route('/image/:collection?/:id?', function() {
 	var self=this;
 	preProcess(self.params.collection,self.params.id,self.request,function(err,myData) {
-		if (myData.derivate) {
-			ImageFiles.routeDerivate(self,myData);
+		if (err || !myData) {
+			self.response.writeHead(404,{});
+			self.response.write("Not Found");
+			self.response.end();
 		} else {
-			ImageFiles.routeOriginal(self,myData);
+			if (myData.derivate) {
+				ImageFiles.routeDerivate(self,myData);
+			} else {
+				ImageFiles.routeOriginal(self,myData);
+			}
 		}
 	});
 }, {where: 'server'});
