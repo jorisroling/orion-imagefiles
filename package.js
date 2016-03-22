@@ -1,7 +1,7 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '1.0.29',
+	version: '1.0.30',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
@@ -32,6 +32,7 @@ Package.onUse(function(api) {
 		"request": "2.69.0",
 		"easyimage": "2.1.0",
 		"tmp": "0.0.28",
+		"gridfs-locks":"1.3.4",
 		"gridfs-locking-stream": "1.1.0",
 		"object-hash": "1.1.2",
 		"image-type": "2.1.0",
