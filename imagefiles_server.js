@@ -585,7 +585,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 												src:inpath,
 												dst:outpath,
 											}
-											eyes({options:_.extend(opts,myData.derivate.options)})
+											// eyes({options:_.extend(opts,myData.derivate.options)})
 											easyimg[myData.derivate.method](_.extend(opts,myData.derivate.options)).then(
 												Meteor.bindEnvironment(function(image) {
 													if (debug) eyes({image});
