@@ -1,134 +1,94 @@
-
-.imageFileCard {
-    width: 354px;
-    padding: 10px;
-}
-
-.imageFileCard-width2 {
-  	width:718px !important;
-}
-
-@media screen and (min-width: 1px) and (max-width: 480px){
-    .imageFileCard {
-      	width: 100%;
-    }
-    .imageFileCard-width2 {
-      	width: 100% !important;
-    }
-}
-
-@media screen and (min-width: 481px) and (max-width:735px){
-    .imageFileCard {
-      	width: 323px;
-    }
-    .imageFileCard-width2 {
-      	width: 646px !important;
-    }
-}
-
-@media screen and (min-width: 736px) and (max-width: 767px){
-    .imageFileCard {
-      	width: 235px;
-    }
-    .imageFileCard-width2 {
-      	width: 470px !important;
-    }
-}
-// @media screen and (min-width:768px) and (max-width: 991px){
-//   #columns[data-columns]::before {
-//     content: '3 .col-xs-4';
-//   }
-// }
-// @media screen and (min-width:992px) and (max-width: 1199px){
-//   #columns[data-columns]::before {
-//     content: '4 .col-xs-3';
-//   }
-// }
-// @media screen and (min-width:1200px) and (max-width: 2399px){
-//   #columns[data-columns]::before {
-//     content: '6 .col-xs-2';
-//   }
-// }
-// @media screen and (min-width:2400px) and (max-width: 9999px){
-//   #columns[data-columns]::before {
-//     content: '12 .col-xs-1';
-//   }
-// }
-
-.orionImageFilesHeader {
-	.inner-addon {
-	    position: relative;
-		width:100%;
-		margin-top:9px;
+#orionImageFiles {
+	.isotopeItem {
+		padding-left: 8px;
+		padding-right: 8px;
 	}
-	.inner-addon input {
-	    padding-right: 30px;    
-	    padding-left: 30px;    
-	}
-	.inner-addon span.left-side {
-	    position: absolute;
-	    padding: 6px 6px;
-	    pointer-events: none;
-		color:#C4C4C4;
-		font-size:22px;
-	}
-	.inner-addon span.right-side {
-	    position: absolute;
-	    right: 0px;
-	    padding: 6px 6px;
-	    // pointer-events: none;
-		color:#C4C4C4;
-		font-size:22px;
-	}
-}
 
-.imageFileCard-content {
-	background-color:white;
-    border: 1px solid lightgrey;
-    text-align: center;
-	width:100%;
-    // width: 354px;
-	// width: calc(100% - 21px);
-    // min-width: 200px;
-    // max-width: 354px;
-    padding: 0.5em;
-    // margin: 10px;
-
-    -moz-border-radius:4px;
-    -webkit-border-radius:4px;
-    border-radius:4px;
-	
-	h3 {
-	    margin-top: 3px;
-		pointer-events: none;
+	.imageFileCard {
+	    width: 100%;
+	    padding-top: 8px;
+	    padding-bottom: 8px;
 	}
-	
-	.dim {
-		text-align: center;
-		font-weight:bold;
-		.times {
-			font-weight:normal;
-			color:silver;
+
+	.orionImageFilesHeader {
+		.inner-addon {
+		    position: relative;
+			width:100%;
+			margin-top:9px;
+		}
+		.inner-addon input {
+		    padding-right: 30px;    
+		    padding-left: 30px;    
+		}
+		.inner-addon span.left-side {
+		    position: absolute;
+		    padding: 6px 6px;
+		    pointer-events: none;
+			color:#C4C4C4;
+			font-size:22px;
+		}
+		.inner-addon span.right-side {
+		    position: absolute;
+		    right: 0px;
+		    padding: 6px 6px;
+		    // pointer-events: none;
+			color:#C4C4C4;
+			font-size:22px;
 		}
 	}
-}
 
-.imageFileRemove {
-	margin-top: -10px;
-	font-size:21px;
-	font-weight: bold;
-	color:silver;
-	cursor: pointer;
-}
+	.imageFileCard-content {
+		background-color:white;
+	    border: 1px solid lightgrey;
+	    text-align: center;
+		width:100%;
+	    // width: 354px;
+		// width: calc(100% - 21px);
+	    // min-width: 200px;
+	    // max-width: 354px;
+	    padding: 0.5em;
+	    // margin: 10px;
 
-.imageFileRemove:hover {
-	color:black;
-}
+	    -moz-border-radius:4px;
+	    -webkit-border-radius:4px;
+	    border-radius:4px;
+	
+		h3 {
+		    margin-top: 3px;
+			pointer-events: none;
+		    // width: 100%;
+		    // display: block;
+		    font-size: 1.8vw;
+		    padding: 0 15px;
+		    word-wrap: break-word;	}
+	
+		.dim {
+			text-align: center;
+			font-weight:bold;
+			.times {
+				font-weight:normal;
+				color:silver;
+			}
+		}
+	}
 
-.imageFileCard P {
-    text-align: left;
-}
+	.imageFileRemove {
+		margin-top: -10px;
+		font-size:21px;
+		font-weight: bold;
+		color:silver;
+		cursor: pointer;
+	}
 
-.imageFileCard-content IMG {
-	cursor: pointer;
+	.imageFileRemove:hover {
+		color:black;
+	}
+
+	.imageFileCard P {
+	    text-align: left;
+	}
+
+	.imageFileCard-content IMG {
+		cursor: pointer;
+	}
 }
