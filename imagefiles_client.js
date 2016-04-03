@@ -71,7 +71,8 @@ function imageFilesShowMoreResults() {
     var threshold, target = $('#imageFilesShowMoreResults');
     if (!target.length) return;
  
-    threshold = $(window).scrollTop() + $(window).height() - target.height();
+    threshold = $(window).scrollTop() + $(window).height() - target.height() + ($(window).height() /3);
+    // threshold = $(window).scrollTop() + $(window).height() - target.height();
  
     if (target.offset().top < threshold) {
         if (!target.data('visible')) {

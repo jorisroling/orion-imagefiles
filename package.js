@@ -1,7 +1,7 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '1.0.33',
+	version: '1.0.35',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
@@ -40,7 +40,7 @@ Package.onUse(function(api) {
 		"async":"1.5.2",
 	});
 
-
+	api.addAssets('loading.gif','client')
 	
 	api.export('ImageFiles','server');
 	api.export('ImageFilesCollection','server');
