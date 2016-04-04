@@ -8,6 +8,7 @@ var debug=false;
 Meteor.startup(function() {
 	// ImageFilesCollection._ensureIndex({'filename':'text','metadata.original':'text','metadata.title':'text','metadata.description':'text'},{unique:false,background: true});
 	try {
+		ImageFilesCollection._ensureIndex({'uploadDate':-1},{unique:false,background: true});
 		ImageFilesCollection._ensureIndex({'metadata.original':1,'metadata.kind':1,'metadata.derivate.hash':1},{unique:false,background: true});
 		ImageFilesCollection._ensureIndex({'$**':'text','uploadDate':-1},{unique:false,background: true});
 	} catch (e) {
