@@ -212,7 +212,7 @@ Template.imageFileCard.helpers({
 	},
 	excerpt() {
 		if (this.metadata && typeof this.metadata.description=='string') {
-			return excerpt(this.metadata.description);
+			return excerpt(this.metadata.description,100);
 		}
 	}
 });
