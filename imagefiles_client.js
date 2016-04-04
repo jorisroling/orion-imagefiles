@@ -119,7 +119,8 @@ ReactiveTemplates.helpers('orionImageFiles', {
 	moreResults() {
 	    // If, once the subscription is ready, we have less rows than we
 	    // asked for, we've got all the rows in the collection.
-	    return !(ImageFilesCollection.find().count() < Session.get('imageFilesLimit'));
+	    return (Counts.get('image.files') > Session.get('imageFilesLimit'));
+	    // return !(ImageFilesCollection.find().count() < Session.get('imageFilesLimit'));
 	},
 	search() {
 		return Session.get('imageFilesSearch');
