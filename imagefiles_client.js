@@ -106,11 +106,11 @@ ReactiveTemplates.onCreated('orionImageFiles', function() {
 function setResizer()
 {
 	$(function(){
-	    Session.set('ImageFilesColumWidth',$('li[data-isotope-position]').width());
+	    Session.set('ImageFilesColumWidth',$('#orionImageFiles li[data-isotope-position]').width());
 	    // console.log({columWidth:Session.get('ImageFilesColumWidth')});
 
 	    $( window ).on('resize', function() {
-			Session.set('ImageFilesColumWidth',$('li[data-isotope-position]').width());
+			Session.set('ImageFilesColumWidth',$('#orionImageFiles li[data-isotope-position]').width());
 		    // console.log({columWidth:Session.get('ImageFilesColumWidth')});
 	    });
 
