@@ -105,23 +105,20 @@ ReactiveTemplates.onCreated('orionImageFiles', function() {
 
 function setResizer()
 {
-	$(function(){
+	// $(function(){
 	    Session.set('ImageFilesColumWidth',$('#orionImageFiles li[data-isotope-position]').width());
-	    // console.log({columWidth:Session.get('ImageFilesColumWidth')});
 
 	    $( window ).on('resize', function() {
 			Session.set('ImageFilesColumWidth',$('#orionImageFiles li[data-isotope-position]').width());
-		    // console.log({columWidth:Session.get('ImageFilesColumWidth')});
 	    });
-
-	});
+	// });
 }
 
 ReactiveTemplates.onRendered('orionImageFiles', function() {
 	$('[data-toggle="tooltip"]').tooltip();
 	
 	setResizer();
-	Meteor.setTimeout(setResizer,1000);
+	Meteor.setInterval(setResizer,1000);
 })
 
 ReactiveTemplates.helpers('orionImageFiles', {
