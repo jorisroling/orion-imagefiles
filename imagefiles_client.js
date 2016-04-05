@@ -1,3 +1,5 @@
+let IMAGEFILE_IMAGE_WIDTH=330;
+
 /**
  * Register the link
  */
@@ -101,8 +103,25 @@ ReactiveTemplates.onCreated('orionImageFiles', function() {
     Session.setDefault('imageFilesSearch', '');
 });
 
+function setResizer()
+{
+	$(function(){
+	    Session.set('ImageFilesColumWidth',$('li[data-isotope-position]').width());
+	    // console.log({columWidth:Session.get('ImageFilesColumWidth')});
+
+	    $( window ).on('resize', function() {
+			Session.set('ImageFilesColumWidth',$('li[data-isotope-position]').width());
+		    // console.log({columWidth:Session.get('ImageFilesColumWidth')});
+	    });
+
+	});
+}
+
 ReactiveTemplates.onRendered('orionImageFiles', function() {
-	$('[data-toggle="tooltip"]').tooltip()
+	$('[data-toggle="tooltip"]').tooltip();
+	
+	setResizer();
+	Meteor.setTimeout(setResizer,1000);
 })
 
 ReactiveTemplates.helpers('orionImageFiles', {
@@ -215,7 +234,19 @@ Template.imageFileCard.helpers({
 		if (this.metadata && typeof this.metadata.description=='string') {
 			return excerpt(this.metadata.description,100);
 		}
-	}
+	},
+	imageWidth() {
+	    let width=Session.get('ImageFilesColumWidth')-16;
+		if (width>0) return width+'px';
+		return 'auto';
+	},
+	imageHeight() {
+		let width=Session.get('ImageFilesColumWidth')-16;
+		if (width>0 && this.metadata && this.metadata.width && this.metadata.height) {
+			return Math.round(this.metadata.height/(this.metadata.width/width))+'px';
+		}
+		return 'auto';
+	},
 });
 
 Template.imageFileCard.events({
