@@ -118,7 +118,7 @@ ReactiveTemplates.onRendered('orionImageFiles', function() {
 	$('[data-toggle="tooltip"]').tooltip();
 	
 	setResizer();
-	for (let i=0;i<10;i++) Meteor.setTimout(setResizer,i*1000);
+	for (let i=0;i<10;i++) Meteor.setTimeout(setResizer,i*1000);
 })
 
 ReactiveTemplates.helpers('orionImageFiles', {
@@ -233,14 +233,28 @@ Template.imageFileCard.helpers({
 		}
 	},
 	imageWidth() {
-	    let width=Session.get('ImageFilesColumWidth')-16;
-		if (width>0) return width+'px';
+		let ImageFilesColumWidth=Session.get('ImageFilesColumWidth');
+		if (!ImageFilesColumWidth) {
+			ImageFilesColumWidth=$('#orionImageFiles li[data-isotope-position]').width();
+			if (ImageFilesColumWidth) Session.set('ImageFilesColumWidth',ImageFilesColumWidth);
+		}
+		if (ImageFilesColumWidth) {
+		    let width=ImageFilesColumWidth-16;
+			if (width>0) return width+'px';
+		}
 		return 'auto';
 	},
 	imageHeight() {
-		let width=Session.get('ImageFilesColumWidth')-16;
-		if (width>0 && this.metadata && this.metadata.width && this.metadata.height) {
-			return Math.round(this.metadata.height/(this.metadata.width/width))+'px';
+		let ImageFilesColumWidth=Session.get('ImageFilesColumWidth');
+		if (!ImageFilesColumWidth) {
+			ImageFilesColumWidth=$('#orionImageFiles li[data-isotope-position]').width();
+			if (ImageFilesColumWidth) Session.set('ImageFilesColumWidth',ImageFilesColumWidth);
+		}
+		if (ImageFilesColumWidth) {
+			let width=Session.get('ImageFilesColumWidth')-16;
+			if (width>0 && this.metadata && this.metadata.width && this.metadata.height) {
+				return Math.round(this.metadata.height/(this.metadata.width/width))+'px';
+			}
 		}
 		return 'auto';
 	},
