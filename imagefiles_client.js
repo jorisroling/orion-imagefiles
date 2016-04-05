@@ -105,20 +105,20 @@ ReactiveTemplates.onCreated('orionImageFiles', function() {
 
 function setResizer()
 {
-	// $(function(){
+	$(function(){
 	    Session.set('ImageFilesColumWidth',$('#orionImageFiles li[data-isotope-position]').width());
 
 	    $( window ).on('resize', function() {
 			Session.set('ImageFilesColumWidth',$('#orionImageFiles li[data-isotope-position]').width());
 	    });
-	// });
+	});
 }
 
 ReactiveTemplates.onRendered('orionImageFiles', function() {
 	$('[data-toggle="tooltip"]').tooltip();
 	
 	setResizer();
-	Meteor.setInterval(setResizer,1000);
+	for (let i=0;i<10;i++) Meteor.setTimout(setResizer,i*1000);
 })
 
 ReactiveTemplates.helpers('orionImageFiles', {
