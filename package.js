@@ -1,7 +1,7 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '1.0.44',
+	version: '1.0.45',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
@@ -16,6 +16,7 @@ Package.onUse(function(api) {
 		'jorisroling:eyes@0.0.10',
 		'mizzao:bootboxjs@4.4.0',
 		'tsega:bootstrap3-lightbox@0.2.0',
+		'momentjs:moment@2.12.0',
 	], 'client');
 
 	api.use([

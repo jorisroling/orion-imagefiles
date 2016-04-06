@@ -258,6 +258,10 @@ Template.imageFileCard.helpers({
 		}
 		return 'auto';
 	},
+	ago() {
+		// console.log({uploadDate:this.uploadDate,m:moment(this.uploadDate).fromNow()})
+		return moment(this.uploadDate).fromNow();
+	},
 });
 
 Template.imageFileCard.events({

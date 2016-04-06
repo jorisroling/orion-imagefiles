@@ -41,18 +41,24 @@
 	   <div class="imageFileCard-content">
 			<span aria-hidden="true" class="imageFileRemove pull-right">&times;</span>
 	        <h3>{{title}}</h3>
-				<!-- <div class="imageHolder" style="height: {{imageHeight}}px; width: 100%; background: url(/image/{{id}}); background-size: cover;"></div> -->
-				<img id="img-{{id}}" src="/image/{{id}}" style="width:{{imageWidth}};height:{{imageHeight}};" data-toggle="lightbox" class="img-responsive center-block" data-title="{{title}}" data-footer="{{excerpt}}"/>
-			<div class="dim">
-				{{metadata.width}} <span class="times">&times;</span> {{metadata.height}}
-			</div>	
+			<img id="img-{{id}}" src="/image/{{id}}" style="width:{{imageWidth}};height:{{imageHeight}};" data-toggle="lightbox" class="img-responsive center-block" data-title="{{title}}" data-footer="{{excerpt}}"/>
 	        <p>
 				{{#if excerpt}}
 					{{{excerpt}}}
-				<!-- {{else}}
-					<a href="{{metadata.original}}">{{metadata.kind}}</a> -->
 				{{/if}}
 			</p>
+			<div class="dim">
+				<b>{{metadata.width}} <span class="times">&times;</span> {{metadata.height}}</b>
+				<br>
+				{{#if metadata.derivate}}
+					{{metadata.derivate.method}} of
+				{{/if}}
+				<a href="{{metadata.original}}">original</a><br>
+				{{ago}}
+			</div>	
+			<!-- <div style="text-align:left">
+				{{{eyes this}}}
+			</div> -->
 		</div>
     </div>
 </template>
