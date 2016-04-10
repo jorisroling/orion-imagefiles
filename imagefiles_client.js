@@ -56,16 +56,20 @@ function clear_html(html)
 
 function excerpt(html,count)
 {	
-	var text=clear_html(html).substring(0,count).trim();
-	var olength=text.length;
-	while (text && text.length && !/[\s\.\,]$/.test(text)) text=text.substr(0,text.length-1);
-	text=text.trim()
-	if (/[\s\.\,]$/.test(text)) text=text.substr(0,text.length-1);
+	var text=clear_html(html)
+	if (count) text=text.substring(0,count)
 	text=text.trim();
-	return text+(text.length<(olength-2)?'&hellip;':'');
+	var olength=text.length;
+	if (count && olength>count) {
+		while (text && text.length && !/[\s\.\,]$/.test(text)) text=text.substr(0,text.length-1);
+		text=text.trim()
+		if (/[\s\.\,]$/.test(text)) text=text.substr(0,text.length-1);
+		text=text.trim();
+	}
+	return text+((count && olength>count && (text.length<(olength-2)))?'&hellip;':'');
 }
 
-var IMAGE_FILES_INCREMENT = 6;
+var IMAGE_FILES_INCREMENT = 12;
 
 // whenever #imageFilesShowMoreResults becomes visible, retrieve more results
 function imageFilesShowMoreResults() {
@@ -229,7 +233,12 @@ Template.imageFileCard.helpers({
 	},
 	excerpt() {
 		if (this.metadata && typeof this.metadata.description=='string') {
-			return excerpt(this.metadata.description,100);
+			return excerpt(this.metadata.description,256);
+		}
+	},
+	fulltext() {
+		if (this.metadata && typeof this.metadata.description=='string') {
+			return excerpt(this.metadata.description);
 		}
 	},
 	imageWidth() {
@@ -240,7 +249,9 @@ Template.imageFileCard.helpers({
 		}
 		if (ImageFilesColumWidth) {
 		    let width=ImageFilesColumWidth-16;
-			if (width>0) return width+'px';
+			if (width>0 && this.metadata && this.metadata.width && this.metadata.height) {
+				return ((width>this.metadata.width)?this.metadata.width:width)+'px';
+			}
 		}
 		return 'auto';
 	},
@@ -251,9 +262,9 @@ Template.imageFileCard.helpers({
 			if (ImageFilesColumWidth) Session.set('ImageFilesColumWidth',ImageFilesColumWidth);
 		}
 		if (ImageFilesColumWidth) {
-			let width=Session.get('ImageFilesColumWidth')-16;
+			let width=ImageFilesColumWidth-16;
 			if (width>0 && this.metadata && this.metadata.width && this.metadata.height) {
-				return Math.round(this.metadata.height/(this.metadata.width/width))+'px';
+				return ((width>this.metadata.width)?this.metadata.height:Math.round(this.metadata.height/(this.metadata.width/width)))+'px';
 			}
 		}
 		return 'auto';

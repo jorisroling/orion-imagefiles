@@ -140,15 +140,18 @@ ImageFiles.registerCollection=function(collection,handler) {
 	if (typeof collection=="string" && collection.length && typeof handler=="function") ImageFiles.collectionHandlers[collection]=handler;
 }
 
-function preProcess(collection,id,request,callback)
+function preProcess(collection,id,method,width,height,request,callback)
 {
 	var result={};
 	if (debug) eyes({request:request.headers});
 	result.cache=(request.query.cache==='false'?false:(request.headers['cache-control']==='no-cache'?false:true));
 
-	if (request.query.method || request.query.derivate) {
-		var derivate={method:request.query.method || request.query.derivate};
+	if (method || request.query.method || request.query.derivate) {
+		var derivate={method:method || request.query.method || request.query.derivate};
 		derivate.options={}
+		if (width) derivate.options.width=parseInt(width);
+		if (width) derivate.options.height=parseInt(width);
+		if (height) derivate.options.height=parseInt(height);
 		for (let k in request.query) {
 			if (k!='url' && k!='method' && k!='derivate' && k!='cache') {
 				derivate.options[k]=(/^[\d]+$/.test(request.query[k])?parseInt(request.query[k]):(/^[\d.]+$/.test(request.query[k])?parseFloat(request.query[k]):((request.query[k]==='true')?true:(request.query[k]=='false'?false:request.query[k]))));
@@ -174,6 +177,16 @@ function preProcess(collection,id,request,callback)
 					if (res) for (var k in res) result[k]=res[k];
 					if (result.derivate && result.derivate.hash) delete result.derivate.hash;
 					if (result.derivate) result.derivate.hash=hash(result.derivate);
+					
+					let link=url.parse(result.link);
+					
+					if (!link.host && request.headers.host) link.host=request.headers.host;
+					if (!link.host) link.host='localhost';
+					if (!link.protocol && request.headers['x-forwarded-proto']) link.protocol=request.headers['x-forwarded-proto'];
+					if (!link.protocol) link.protocol='http';
+					
+					result.link=url.format(link);
+					
 					callback(null,result);
 				}
 			});
@@ -711,9 +724,9 @@ ImageFiles.routeDerivate=function(context,myData) {
 	}
 }
 
-RouterLayer.ironRouter.route('/image/:id?', function() {
+RouterLayer.ironRouter.route('/image/file/:id?/:method?/:width?/:height?', function() {
 	var self=this;
-	preProcess(ImageFiles.collection,self.params.id,self.request,function(err,myData) {
+	preProcess(ImageFiles.collection,self.params.id,self.params.method,self.params.width,self.params.height,self.request,function(err,myData) {
 		if (err || !myData) {
 			self.response.writeHead(404,{});
 			self.response.write("Not Found");
@@ -728,9 +741,9 @@ RouterLayer.ironRouter.route('/image/:id?', function() {
 	});
 }, {where: 'server'});
 
-RouterLayer.ironRouter.route('/image/:collection?/:id?', function() {
+RouterLayer.ironRouter.route('/image/:collection?/:id?/:method?/:width?/:height?', function() {
 	var self=this;
-	preProcess(self.params.collection,self.params.id,self.request,function(err,myData) {
+	preProcess(self.params.collection,self.params.id,self.params.method,self.params.width,self.params.height,self.request,function(err,myData) {
 		if (err || !myData) {
 			self.response.writeHead(404,{});
 			self.response.write("Not Found");
@@ -745,14 +758,23 @@ RouterLayer.ironRouter.route('/image/:collection?/:id?', function() {
 	});
 }, {where: 'server'});
 
+ImageFiles.registerCollection('orion',function(id,callback) {
+	var result={};
+	
+	// eyes({files:orion.filesystem.collection.find({},{}).fetch()});
+	// eyes({id});
+	//
+	let orionFile=orion.filesystem.collection.find({_id:id},{limit:1}).fetch();
+	if (orionFile && orionFile.length) {
+		orionFile=orionFile[0];
+		if (orionFile.url) result.link=orionFile.url;
+		if (orionFile.name) result.title=orionFile.name;
+		// result.file={};
+		// eyes({result});
+		callback(null,result);
+	} else {
+		callback(new Error('orionFile ID not found'));
+	}
+})
 
-// RouterLayer.ironRouter.route('/derivate/:id?', function() {
-// 	preProcess(self.params.collection,self.params.id,self.request,function(err,myData) {
-// 		if (this.request.query.derivate) {
-// 			ImageFiles.routeDerivate(self,myData);
-// 		} else {
-// 			ImageFiles.routeOriginal(self,myData);
-// 		}
-// 	});
-// 	ImageFiles.routeDerivate(this,myData);
-// }, {where: 'server'});
+

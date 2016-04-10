@@ -41,12 +41,12 @@
 	   <div class="imageFileCard-content">
 			<span aria-hidden="true" class="imageFileRemove pull-right">&times;</span>
 	        <h3>{{title}}</h3>
-			<img id="img-{{id}}" src="/image/{{id}}" style="width:{{imageWidth}};height:{{imageHeight}};" data-toggle="lightbox" class="img-responsive center-block" data-title="{{title}}" data-footer="{{excerpt}}"/>
-	        <p>
-				{{#if excerpt}}
+			<img id="img-{{id}}" src="/image/file/{{id}}" style="width:{{imageWidth}};height:{{imageHeight}};" data-toggle="lightbox" class="img-responsive center-block" data-title="{{title}}" data-footer="{{fulltext}}"/>
+			{{#if excerpt}}
+				<p style="text-align:center">
 					{{{excerpt}}}
-				{{/if}}
-			</p>
+				</p>
+			{{/if}}
 			<div class="dim">
 				<b>{{metadata.width}} <span class="times">&times;</span> {{metadata.height}}</b>
 				<br>
@@ -56,9 +56,6 @@
 				<a href="{{metadata.original}}">original</a><br>
 				{{ago}}
 			</div>	
-			<!-- <div style="text-align:left">
-				{{{eyes this}}}
-			</div> -->
 		</div>
     </div>
 </template>
