@@ -696,7 +696,10 @@ ImageFiles.routeDerivate=function(context,myData) {
 													}
 												}),
 												function (err) {
-													console.log(err);
+													// console.log(err);
+													self.response.writeHead(404,{});
+													self.response.write(err);
+													self.response.end();
 												}
 											);
 										}))
