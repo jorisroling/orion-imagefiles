@@ -41,14 +41,22 @@
 	   <div class="imageFileCard-content">
 			<span aria-hidden="true" class="imageFileRemove pull-right">&times;</span>
 	        <h3>{{title}}</h3>
-			<img id="img-{{id}}" src="/image/file/{{id}}" style="width:{{imageWidth}};height:{{imageHeight}};" data-toggle="lightbox" class="img-responsive center-block" data-title="{{title}}" data-footer="{{fulltext}}"/>
+			{{#if isImage}}
+				<img id="img-{{id}}" src="/image/file/{{id}}" style="width:{{imageWidth}};height:{{imageHeight}};" data-toggle="lightbox" class="img-responsive center-block" data-title="{{title}}" data-footer="{{fulltext}}"/>
+			{{else}}
+				<a href="/image/file/{{id}}"><i class="{{icon}}" aria-hidden="true" style="font-size:80px"></i></a>
+			{{/if}}
 			{{#if excerpt}}
 				<p style="text-align:center">
 					{{{excerpt}}}
 				</p>
 			{{/if}}
 			<div class="dim">
-				<b>{{metadata.width}} <span class="times">&times;</span> {{metadata.height}}</b>
+				{{#if $or metadata.width metadata.height}}
+					<b>{{metadata.width}} <span class="times">&times;</span> {{metadata.height}}</b>
+				{{else}}
+					<b>{{contentType}}</b>
+				{{/if}}
 				<br>
 				{{#if metadata.derivate}}
 					{{metadata.derivate.method}} of

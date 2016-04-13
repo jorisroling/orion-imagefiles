@@ -1,13 +1,13 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '1.0.50',
+	version: '1.0.51',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
 Package.onUse(function(api) {
 	api.versionsFrom('1.2');
-	api.use(['meteor-platform', 'less@2.5.1','ecmascript@0.1.6','orionjs:base@1.6.0','nicolaslopezj:roles@2.0.0']);
+	api.use(['meteor-platform', 'less@2.5.1','ecmascript@0.1.6','orionjs:base@1.6.0','nicolaslopezj:roles@2.0.0','raix:handlebar-helpers@0.2.5']);
 
 	api.use(['orionjs:bootstrap@1.6.0'], 'client', { weak: true });
 	
