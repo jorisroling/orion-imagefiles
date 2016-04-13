@@ -235,7 +235,7 @@ function pipeCachedFile(myData,request,response,callback)
 			let lastModified=moment(imageFiles[0].uploadDate).format('ddd, DD MMM YYYY HH:mm:ss')+' GMT';
 
 			if (lastModified === request.headers['if-modified-since']) {
-						response.writeHead(304, {});
+				response.writeHead(304, {});
 				response.end();
 				return callback(null,{done:'not-modified-date'})
 			}
@@ -328,14 +328,16 @@ ImageFiles.ensureImage=function(myData,callback)
 						// eyes({body});
 						var imageData=new Buffer(body,'binary');
 						try {
-							var type;
-							try {
-								type = imageType(imageData);
-								if (debug) eyes({type});
-							} catch (e) {
-								eyes({e});
+							var type=response.headers['content-type'];
+							if (!type) {
+								try {
+									type = imageType(imageData);
+									if (debug) eyes({type});
+									type=type && type.mime;
+								} catch (e) {
+									eyes({e});
+								}
 							}
-
 							var dim;
 							try {
 								dim = imageSize(imageData);
@@ -365,7 +367,7 @@ ImageFiles.ensureImage=function(myData,callback)
 								filename: baseName,
 								mode: 'w',
 								chunkSize: 1024,
-								content_type: type && type.mime,
+								content_type: type,
 								root: gridCollection,
 								metadata: {
 									width: dim && dim.width,
@@ -447,12 +449,15 @@ ImageFiles.routeOriginal=function(context,myData) {
 								// eyes({body});
 								var imageData=new Buffer(body,'binary');
 								try {
-									var type;
-									try {
-										type = imageType(imageData);
-										if (debug) eyes({type});
-									} catch (e) {
-										eyes({e});
+									var type=response.headers['content-type'];
+									if (!type) {
+										try {
+											type = imageType(imageData);
+											if (debug) eyes({type});
+											type=type && type.mime;
+										} catch (e) {
+											eyes({e});
+										}
 									}
 
 									var dim;
@@ -481,7 +486,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 											filename: baseName,
 											mode: 'w',
 											chunkSize: 1024,
-											content_type: type && type.mime,
+											content_type: type,
 											root: gridCollection,
 											metadata: {
 												width: dim && dim.width,
@@ -582,6 +587,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 								// var imageData=new Buffer(body,'binary');
 								if (debug) eyes({headers:response.headers});
 
+								
 								tmp.file(Meteor.bindEnvironment(function _tempFileCreated(err, inpath, infd, cleanupInTmpCallback) {
 									if (debug) console.log('File in: ', inpath);
 									if (debug) console.log('Filedescriptor in: ', infd);
@@ -607,7 +613,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 													// if (debug) eyes(response.statusCode);
 													// if (debug) eyes(response.headers);
 													if (!error && response && response.statusCode == 200) {
-														fs.readFile(outpath, 'binary', Meteor.bindEnvironment(function (err, file) {
+														fs.readFile((image.type=='mvg')?inpath:outpath, 'binary', Meteor.bindEnvironment(function (err, file) {
 
 															var imageData=new Buffer(file.toString(),'binary');
 
@@ -766,18 +772,20 @@ ImageFiles.registerCollection('orion',function(id,callback) {
 	
 	// eyes({files:orion.filesystem.collection.find({},{}).fetch()});
 	// eyes({id});
-	//
-	let orionFile=orion.filesystem.collection.find({_id:id},{limit:1}).fetch();
+
+	let orionFile=orion.filesystem.collection.find({$or:[{_id:id},{'meta.gridFS_id':id}]},{limit:1}).fetch();
 	if (orionFile && orionFile.length) {
 		orionFile=orionFile[0];
 		if (orionFile.url) result.link=orionFile.url;
 		if (orionFile.name) result.title=orionFile.name;
 		// result.file={};
 		// eyes({result});
-		callback(null,result);
+		// callback(null,result);
 	} else {
-		callback(new Error('orionFile ID not found'));
+		result.link='/gridfs/data/id/'+id;
+		// callback(new Error('orionFile ID not found'));
 	}
+	callback(null,result);
 })
 
 
