@@ -637,7 +637,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 																	filename: baseName,
 																	mode: 'w',
 																	chunkSize: 1024,
-																	content_type: 'image/'+image.type,
+																	content_type: (image.type=='mvg')?response.headers['response.headers']:('image/'+image.type),
 																	root: gridCollection,
 																	metadata: {
 																		width:image.width,
