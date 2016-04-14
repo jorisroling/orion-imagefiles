@@ -182,6 +182,7 @@ function preProcess(collection,id,method,width,height,request,callback)
 					
 					let link=url.parse(result.link);
 					
+					if (!link.host || !link.protocol) result.original=result.link;
 					if (!link.host && request.headers.host) link.host=request.headers.host;
 					if (!link.host) link.host='localhost';
 					if (!link.protocol && request.headers['x-forwarded-proto']) link.protocol=request.headers['x-forwarded-proto'];
@@ -216,7 +217,7 @@ function pipeCachedFile(myData,request,response,callback)
 				if (debug) eyes({id:myData.id});
 				query={'_id':new MongoInternals.NpmModule.ObjectID(myData.id)};
 			} else if (myData.link) {
-				query={'metadata.original':unescape(myData.link)};
+				query={'metadata.original':unescape(myData.original?myData.original:myData.link)};
 				query['metadata.kind']=myData.derivate?'derivate':'original';
 				if (myData.derivate && myData.derivate.hash) query['metadata.derivate.hash']=myData.derivate.hash;
 			} else {
@@ -308,7 +309,7 @@ ImageFiles.ensureImage=function(myData,callback)
 			if (debug) eyes({id:myData.id});
 			query={'_id':new MongoInternals.NpmModule.ObjectID(myData.id)};
 		} else if (myData.link) {
-			query={'metadata.original':unescape(myData.link)};
+			query={'metadata.original':unescape(myData.original?myData.original:myData.link)};
 			query['metadata.kind']=myData.derivate?'derivate':'original';
 			if (myData.derivate && myData.derivate.hash) query['metadata.derivate.hash']=myData.derivate.hash;
 		} else {
@@ -345,7 +346,7 @@ ImageFiles.ensureImage=function(myData,callback)
 								dim = imageSize(imageData);
 								if (debug) eyes({dim});
 							} catch (e) {
-								eyes({link:myData.link,type,e,body});
+								eyes({link:myData.link,type,e});
 							}
 
 							// var imageData=new Buffer(file.toString(),'binary');
@@ -375,8 +376,8 @@ ImageFiles.ensureImage=function(myData,callback)
 									width: dim && dim.width,
 									height:dim && dim.height,
 									kind:'original',
-									original:myData.link,
-									hash:hash(myData.link),
+									original:myData.original?myData.original:myData.link,
+									hash:hash(myData.original?myData.original:myData.link),
 								},
 								aliases: []
 							}
@@ -467,7 +468,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 										dim = imageSize(imageData);
 										if (debug) eyes({dim});
 									} catch (e) {
-										eyes({link:myData.link,type,e,body});
+										eyes({link:myData.link,type,e});
 									}
 
 									// var imageData=new Buffer(file.toString(),'binary');
@@ -494,8 +495,8 @@ ImageFiles.routeOriginal=function(context,myData) {
 												width: dim && dim.width,
 												height:dim && dim.height,
 												kind:'original',
-												original:myData.link,
-												hash:hash(myData.link),
+												original:myData.original?myData.original:myData.link,
+												hash:hash(myData.original?myData.original:myData.link),
 											},
 											aliases: []
 										}
@@ -545,6 +546,9 @@ ImageFiles.routeOriginal=function(context,myData) {
 									if (debug) console.log('done.')
 								} catch (e) {
 									eyes({e});
+									self.response.writeHead(500,{});
+									self.response.write("Internal Server Error");
+									self.response.end();
 								}
 							} else {
 								self.response.writeHead(response.statusCode,response.headers);
@@ -589,7 +593,12 @@ ImageFiles.routeDerivate=function(context,myData) {
 								// var imageData=new Buffer(body,'binary');
 								if (debug) eyes({headers:response.headers});
 
-								
+								if (!/^image\//.test(response.headers['response.headers'])) {
+									self.response.writeHead(301,{Location:myData.link});
+									self.response.end();
+									// eyes({Location:myData.link});
+									return;
+								}
 								tmp.file(Meteor.bindEnvironment(function _tempFileCreated(err, inpath, infd, cleanupInTmpCallback) {
 									if (debug) console.log('File in: ', inpath);
 									if (debug) console.log('Filedescriptor in: ', infd);
@@ -603,11 +612,13 @@ ImageFiles.routeDerivate=function(context,myData) {
 											if (err) throw err
 											if (debug) console.log('File in saved.')
 
+
 											var opts={
 												src:inpath,
-												dst:outpath,
+												dst:((/^image\//.test(response.headers['response.headers']))?'':'png:')+outpath,
+												extra:[]
 											}
-											// eyes({options:_.extend(opts,myData.derivate.options)})
+											//eyes({options:_.extend(opts,myData.derivate.options)})
 											easyimg[myData.derivate.method](_.extend(opts,myData.derivate.options)).then(
 												Meteor.bindEnvironment(function(image) {
 													if (debug) eyes({image});
@@ -645,8 +656,8 @@ ImageFiles.routeDerivate=function(context,myData) {
 																		width:image.width,
 																		height:image.height,
 																		kind:'derivate',
-																		original:myData.link,
-																		hash:hash(myData.link),
+																		original:myData.original?myData.original:myData.link,
+																		hash:hash(myData.original?myData.original:myData.link),
 																		derivate:myData.derivate,
 																	},
 																	aliases: []
