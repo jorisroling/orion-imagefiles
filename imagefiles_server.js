@@ -593,7 +593,8 @@ ImageFiles.routeDerivate=function(context,myData) {
 								// var imageData=new Buffer(body,'binary');
 								if (debug) eyes({headers:response.headers});
 
-								if (!/^image\//.test(response.headers['response.headers'])) {
+								if (!/^image\//.test(response.headers['content-type'])) {
+									// eyes({'content-type':response.headers['content-type']});
 									self.response.writeHead(301,{Location:myData.link});
 									self.response.end();
 									// eyes({Location:myData.link});
@@ -615,7 +616,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 
 											var opts={
 												src:inpath,
-												dst:((/^image\//.test(response.headers['response.headers']))?'':'png:')+outpath,
+												dst:((/^image\//.test(response.headers['content-type']))?'':'png:')+outpath,
 												extra:[]
 											}
 											//eyes({options:_.extend(opts,myData.derivate.options)})
@@ -650,7 +651,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 																	filename: baseName,
 																	mode: 'w',
 																	chunkSize: 1024,
-																	content_type: (image.type=='mvg')?response.headers['response.headers']:('image/'+image.type),
+																	content_type: (image.type=='mvg')?response.headers['content-type']:('image/'+image.type),
 																	root: gridCollection,
 																	metadata: {
 																		width:image.width,
