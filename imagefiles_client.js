@@ -251,7 +251,7 @@ Template.imageFileCard.helpers({
 	},
 	imageWidth() {
 		let ImageFilesColumWidth=Session.get('ImageFilesColumWidth');
-		if (!ImageFilesColumWidth) {
+		if (!ImageFilesColumWidth || ImageFilesColumWidth<100) {
 			ImageFilesColumWidth=$('#orionImageFiles li[data-isotope-position]').width();
 			if (ImageFilesColumWidth) Session.set('ImageFilesColumWidth',ImageFilesColumWidth);
 		}
@@ -265,7 +265,7 @@ Template.imageFileCard.helpers({
 	},
 	imageHeight() {
 		let ImageFilesColumWidth=Session.get('ImageFilesColumWidth');
-		if (!ImageFilesColumWidth) {
+		if (!ImageFilesColumWidth || ImageFilesColumWidth<100) {
 			ImageFilesColumWidth=$('#orionImageFiles li[data-isotope-position]').width();
 			if (ImageFilesColumWidth) Session.set('ImageFilesColumWidth',ImageFilesColumWidth);
 		}

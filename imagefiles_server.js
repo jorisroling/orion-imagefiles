@@ -291,12 +291,12 @@ ImageFiles.ensureImages=function(myList,callback)
 	try {
 		async.map(myList,Meteor.bindEnvironment(function(myData, callback) {
 			ImageFiles.ensureImage(myData,function(err,result) {
-				callback(null,result);
+				return callback(null,result);
 			});
 		}),callback);		
 	} catch (e) {
 		eyes({e});
-		callback(new Error(e.message));
+		return callback(new Error(e.message));
 	}
 }
 
@@ -313,18 +313,18 @@ ImageFiles.ensureImage=function(myData,callback)
 			query['metadata.kind']=myData.derivate?'derivate':'original';
 			if (myData.derivate && myData.derivate.hash) query['metadata.derivate.hash']=myData.derivate.hash;
 		} else {
-			callback(Error('No clue how to return image'));
+			return callback(Error('No clue how to return image'));
 		}
 
 		if (debug) eyes({query});
 		var imageFiles=ImageFilesCollection.find(query,{limit:1}).fetch();
 		if (imageFiles && imageFiles[0]) {
-			callback(null,imageFiles[0])
+			return callback(null,imageFiles[0])
 		} else {
 			var urlParse=url.parse(myData.link);
 			if (urlParse.hostname && urlParse.protocol) {
 				return request({uri:myData.link,encoding:'binary'}, Meteor.bindEnvironment(function(error, response, body) {
-					if (error) callback(error);
+					if (error) return callback(error);
 					if (debug) eyes({response:response.headers});
 
 					if (body && response.statusCode==200) {
@@ -396,9 +396,9 @@ ImageFiles.ensureImage=function(myData,callback)
 								
 										var imageFiles=ImageFilesCollection.find(query,{limit:1}).fetch();
 										if (imageFiles && imageFiles[0]) {
-											callback(null,imageFiles[0])
+											return callback(null,imageFiles[0])
 										} else {
-											callback(new Error('Image should have been stored'));
+											return callback(new Error('Image should have been stored'));
 										}
 									}));
 
@@ -407,25 +407,25 @@ ImageFiles.ensureImage=function(myData,callback)
 									bufferStream.pipe(writestream);
 								} else {
 									// Stream couldn't be created because a write lock was not available
-									callback(new Error('Stream couldn\'t be created because a write lock was not available'));
+									return callback(new Error('Stream couldn\'t be created because a write lock was not available'));
 								}
 							}));
 
 						} catch (e) {
 							eyes({e});
-							callback(new Error(e.message));
+							return callback(new Error(e.message));
 						}
 					} else {
-						callback(new Error('No image'))
+						return callback(new Error('No image'))
 					}
 				}))
 			} else {
-				callback(new Error('Image not found'))
+				return callback(new Error('Image not found'))
 			}
 		}
 	} catch (e) {
 		eyes({e});
-		callback(new Error(e.message));
+		return callback(new Error(e.message));
 	}
 }
 

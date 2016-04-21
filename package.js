@@ -1,43 +1,47 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '1.0.56',
+	version: '1.0.59',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
 Package.onUse(function(api) {
-	api.versionsFrom('1.2');
-	api.use(['meteor-platform', 'less@2.5.1','ecmascript@0.1.6','orionjs:base@1.6.0','nicolaslopezj:roles@2.0.0','raix:handlebar-helpers@0.2.5']);
+	api.versionsFrom('1.3');
+	api.use([
+		'meteor-platform', 
+		'http@1.1.4',
+		'less@2.5.7',
+		'ecmascript@0.1.6',
+		'orionjs:core@1.8.0',
+		'orionjs:accounts@1.8.1',
+		'nicolaslopezj:roles@2.2.0',
+		'raix:handlebar-helpers@0.2.5',
+		'jorisroling:eyes@0.0.15',
+		'momentjs:moment@2.13.1',
+		'tmeasday:publish-counts@0.7.3',
+	]);
 
-	api.use(['orionjs:bootstrap@1.6.0'], 'client', { weak: true });
+	api.use(['orionjs:bootstrap@1.8.0'], 'client', { weak: true });
 	
 	api.use([
-		'jorisroling:isotope@1.0.8',
-		'jorisroling:eyes@0.0.15',
+		'jorisroling:isotope@1.0.14',
 		'mizzao:bootboxjs@4.4.0',
 		'tsega:bootstrap3-lightbox@0.2.0',
-		'momentjs:moment@2.12.0',
 	], 'client');
-
-	api.use([
-		'tmeasday:publish-counts@0.7.3',
-		// 'dburles:mongo-collection-instances@0.3.5',
-	]);
-	
 
 	api.addFiles('imagefiles.js');
 	api.addFiles('imagefiles_server.js', 'server');
 	api.addFiles(['imagefiles_bootstrap.html','imagefiles_client.js','imagefiles.less'], 'client');
 
 	Npm.depends({
-		"request": "2.69.0",
+		"request": "2.72.0",
 		"easyimage": "2.1.0",
 		"tmp": "0.0.28",
 		"gridfs-locks":"1.3.4",
 		"gridfs-locking-stream": "1.1.0",
 		"object-hash": "1.1.2",
 		"image-type": "2.1.0",
-		"image-size":"0.4.0",
+		"image-size":"0.5.0",
 		"async":"1.5.2",
 	});
 
