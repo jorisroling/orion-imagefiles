@@ -7,6 +7,8 @@
 
   {{> hello}}
   {{> info}}
+  
+  {{> appinfo}}
 </body>
 
 <template name="hello">
@@ -22,4 +24,19 @@
     <li><a href="https://docs.meteor.com">Read the Docs</a></li>
     <li><a href="https://forums.meteor.com">Discussions</a></li>
   </ul>
+</template>
+
+<template name="appinfo">
+  {{eyes AppInfo}}
+	
+  <table>
+    <tr><td>Server:</td><td>{{server}}</td></tr>
+    <tr><td>Build:</td><td>{{AppInfo 'build'}}</td></tr>
+    <tr><td>Branch:</td><td>{{AppInfo 'branch'}}</td></tr>
+    <tr><td>Author:</td><td>{{AppInfo 'author'}}</td></tr>
+    <tr><td>Tag:</td><td>{{AppInfo 'tag'}}</td></tr>
+    <tr><td>Date:</td><td>{{AppInfo 'date'}}</td></tr>
+    <tr><td>Short:</td><td>{{AppInfo 'short'}}</td></tr>
+    <tr><td>Long:</td><td>{{AppInfo 'long'}}</td></tr>
+  </table>
 </template>

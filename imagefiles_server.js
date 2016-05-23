@@ -28,7 +28,7 @@ Meteor.publish(ImageFiles.collection, function(limit, search) {
 		// selector.name = query.name;
 		if (search && search.length) selector.$text = {$search:search};
 
-		Counts.publish(this,ImageFiles.collection,ImageFilesCollection.find(selector/*,{disableOplog:true,pollingIntervalMs:5*1000,pollingThrottleMs:50}*/), { noReady: true });
+		Counts.publish(this,ImageFiles.collection,ImageFilesCollection.find(selector/*,{disableOplog:true,pollingIntervalMs:5*1000,pollingThrottleMs:50}*/), {noReady:true,nonReactive:true});
 
 		var result=ImageFilesCollection.find(selector, {
 			limit: limit || 20,

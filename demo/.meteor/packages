@@ -21,3 +21,4 @@ twbs:bootstrap
 orionjs:bootstrap
 iron:router
 jorisroling:orion-imagefiles
+jorisroling:app-info
