@@ -99,6 +99,7 @@ var async = Npm.require('async');
 var imageSize = Npm.require('image-size');
 var imageType = Npm.require('image-type');
 
+const fileType = require('file-type');
 /*
 easyimg.info(<image_path>) - to retrieve information about an image. Will return an object with the following properties - type, depth, width, height, size, density, name, and path.
 easyimg.convert(<options>) - to convert an image from one format to another.
@@ -590,7 +591,14 @@ ImageFiles.routeDerivate=function(context,myData) {
 						return request({uri:myData.link,encoding:'binary'},Meteor.bindEnvironment(function(error, response, body) {
 							if (error) throw error;
 							if (body && response.statusCode==200) {
-								// var imageData=new Buffer(body,'binary');
+								
+								var fimageData=new Buffer(body,'binary');
+								let ftype=fileType(fimageData);
+								if (!ftype || !ftype.mime || !ftype.mime.match(/^image\//)) {
+									eyes({bad_ftype:ftype});
+									throw(new Error('Could not establish correct image format'));
+								}
+								
 								if (debug) eyes({headers:response.headers});
 
 								if (!/^image\//.test(response.headers['content-type'])) {
