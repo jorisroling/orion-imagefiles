@@ -59,7 +59,7 @@ Meteor.methods({
 		// without waiting for the email sending to complete.
 		this.unblock();
 
-		if(debug) eyes({remove:id});
+		if (debug) eyes({remove:id});
 		let options={
 			_id: new MongoInternals.NpmModule.ObjectID(id)
 		};
@@ -147,9 +147,9 @@ function preProcess(collection,id,method,width,height,request,callback)
 {
 	var result={};
 	if (debug) eyes({request:request.headers});
-	result.cache=(request.query.cache==='false'?false:(request.headers['cache-control']==='no-cache'?false:true));
+	result.cache=((request.query && request.query.cache==='false')?false:(request.headers['cache-control']==='no-cache'?false:true));
 
-	if (method || request.query.method || request.query.derivate) {
+	if (method || (request.query && (request.query.method || request.query.derivate))) {
 		var derivate={method:method || request.query.method || request.query.derivate};
 		derivate.options={}
 		if (width) derivate.options.width=parseInt(width);
@@ -165,10 +165,24 @@ function preProcess(collection,id,method,width,height,request,callback)
 		if (debug) eyes({derivate});
 		result.derivate=derivate;
 	}
+
+  if (!request.query && request.url) {
+    let pos=request.url.indexOf('?');
+    if (pos>=0) {
+      let search = request.url.substr(pos+1)
+      let query = search?JSON.parse('{"' + search.replace(/&/g, '","').replace(/=/g,'":"') + '"}',function(key, value) { return key===""?value:decodeURIComponent(value) }):{}
+      if (query) {
+        if (debug) eyes({query})
+        request.query = query;
+      }
+    }
+  }
 	
-	if (request.query.url) result.link=unescape(request.query.url);
-	if (request.query.title) result.title=request.query.title;
-	if (request.query.description) result.description=request.query.description;
+  if (request.query) {
+  	if (request.query.url) result.link=unescape(request.query.url);
+  	if (request.query.title) result.title=request.query.title;
+  	if (request.query.description) result.description=request.query.description;
+  }
 
 	if (collection && collection!=ImageFiles.collection) {
 		if (ImageFiles.collectionHandlers[collection]) {
@@ -209,20 +223,21 @@ function preProcess(collection,id,method,width,height,request,callback)
 
 function pipeCachedFile(myData,request,response,callback)
 {
-	if(debug) eyes({myData});
+	if (debug) eyes({myData});
 	if (myData) {
 		if (myData.cache) {
 			var query;
-
 			if (myData.id && myData.id.length && myData.collection==ImageFiles.collection) {
 				if (debug) eyes({id:myData.id});
-				query={'_id':new MongoInternals.NpmModule.ObjectID(myData.id)};
+        // query={'_id':new MongoInternals.NpmModule.ObjectID(myData.id)};
+				query={'_id':new Meteor.Collection.ObjectID(myData.id)};
 			} else if (myData.link) {
 				query={'metadata.original':unescape(myData.original?myData.original:myData.link)};
 				query['metadata.kind']=myData.derivate?'derivate':'original';
 				if (myData.derivate && myData.derivate.hash) query['metadata.derivate.hash']=myData.derivate.hash;
 			} else {
-				throw new Error('No clue how to return image');
+        console.trace('No clue');
+				throw new Error('No clue how to return image B');
 			}
 
 			if (debug) eyes({query});
@@ -244,11 +259,9 @@ function pipeCachedFile(myData,request,response,callback)
 				return callback(null,{done:'not-modified-date'})
 			}
 	
-			// if (debug) eyes({imageFiles});
 			let options={
 				_id: new MongoInternals.NpmModule.ObjectID(imageFiles[0]._id.valueOf())//imageFiles[0]._id.valueOf(),
 			};
-			// if (debug) eyes({options});
 			var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
 	
 			gfs.createReadStream(options,Meteor.bindEnvironment(function (error, readstream) {
@@ -256,8 +269,6 @@ function pipeCachedFile(myData,request,response,callback)
 					callback(error);
 				} else {
 					if (readstream) {
-						// if (debug) eyes('pipe');
-						// if (debug) eyes({readstream,response});
 						var headers={
 							// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
 							'Server':'meteor',
@@ -314,7 +325,7 @@ ImageFiles.ensureImage=function(myData,callback)
 			query['metadata.kind']=myData.derivate?'derivate':'original';
 			if (myData.derivate && myData.derivate.hash) query['metadata.derivate.hash']=myData.derivate.hash;
 		} else {
-			return callback(Error('No clue how to return image'));
+			return callback(Error('No clue how to return image A'));
 		}
 
 		if (debug) eyes({query});
@@ -431,11 +442,10 @@ ImageFiles.ensureImage=function(myData,callback)
 }
 
 ImageFiles.routeOriginal=function(context,myData) {
-	let self=context;
 	try {
-		if (self.request.query.url || self.params.id) {
+		if ((context.request.query && context.request.query.url) || context.params.id) {
 		
-			pipeCachedFile(myData,self.request,self.response,function(err,myData) {
+			pipeCachedFile(myData,context.request,context.response,function(err,myData) {
 				if (err) {
 					throw err;
 				} else if (myData && myData.done) {
@@ -526,7 +536,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 
 									// response.headers['Content-Length']=file.length;
 									// if (debug) eyes(response.headers);
-									// self.response.writeHead(response.statusCode,response.headers);
+									// context.response.writeHead(response.statusCode,response.headers);
 									var headers={
 										// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
 										'Server':'meteor',
@@ -540,46 +550,45 @@ ImageFiles.routeOriginal=function(context,myData) {
 										'Cache-Control':'public; max-age=2678400', // 1 month
 									}
 									if (debug) eyes({response:headers});
-									self.response.writeHead(200,headers);
-									self.response.write(imageData);
-									self.response.end();
+									context.response.writeHead(200,headers);
+									context.response.write(imageData);
+									context.response.end();
 
 									if (debug) console.log('done.')
 								} catch (e) {
 									eyes({e});
-									self.response.writeHead(500,{});
-									self.response.write("Internal Server Error");
-									self.response.end();
+									context.response.writeHead(500,{});
+									context.response.write("Internal Server Error");
+									context.response.end();
 								}
 							} else {
-								self.response.writeHead(response.statusCode,response.headers);
-								if (body) self.response.write(body);
-								self.response.end();
+								context.response.writeHead(response.statusCode,response.headers);
+								if (body) context.response.write(body);
+								context.response.end();
 							}
 						}))
 					} else {
-						self.response.writeHead(404,{});
-						self.response.write("Not Found");
-						self.response.end();
+						context.response.writeHead(404,{});
+						context.response.write("Not Found");
+						context.response.end();
 					}
 				}
 			})
 		}
 	} catch (e) {
 		eyes({exception: e});
-		self.response.writeHead(500,{});
-		self.response.write("Internal Server Error");
-		self.response.end();
+		context.response.writeHead(500,{});
+		context.response.write("Internal Server Error");
+		context.response.end();
 	}
 }
 
 
 ImageFiles.routeDerivate=function(context,myData) {
-	let self=context;
 	try {
-		if (self.request.query.url || self.params.id) {
+		if ((context.request.query && context.request.query.url) || context.params.id) {
 		
-			pipeCachedFile(myData,self.request,self.response,function(err,myData) {
+			pipeCachedFile(myData,context.request,context.response,function(err,myData) {
 				if (err) {
 					throw err;
 				} else if (myData && myData.done) {
@@ -603,8 +612,8 @@ ImageFiles.routeDerivate=function(context,myData) {
 
 								if (!/^image\//.test(response.headers['content-type'])) {
 									// eyes({'content-type':response.headers['content-type']});
-									self.response.writeHead(301,{Location:myData.link});
-									self.response.end();
+									context.response.writeHead(301,{Location:myData.link});
+									context.response.end();
 									// eyes({Location:myData.link});
 									return;
 								}
@@ -692,7 +701,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 
 															// response.headers['Content-Length']=file.length;
 															// if (debug) eyes(response.headers);
-															// self.response.writeHead(response.statusCode,response.headers);
+															// context.response.writeHead(response.statusCode,response.headers);
 															var headers={
 																// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
 																'Server':'meteor',
@@ -706,9 +715,9 @@ ImageFiles.routeDerivate=function(context,myData) {
 																'Cache-Control':'public; max-age=2678400', // 1 month
 																	}
 															if (debug) eyes({response:headers});
-																	self.response.writeHead(200,headers);
-															self.response.write(imageData);
-																	self.response.end();
+																	context.response.writeHead(200,headers);
+															context.response.write(imageData);
+																	context.response.end();
 
 															cleanupInTmpCallback();
 															cleanupOutTmpCallback();
@@ -716,78 +725,98 @@ ImageFiles.routeDerivate=function(context,myData) {
 
 														}));
 													} else {
-														self.response.writeHead(500,{});
-														self.response.write("Internal Server Error");
-														self.response.end();
-														// self.response.writeHead(302,{'Location':'/img/notfound.png'});
-														// self.response.end();
+														context.response.writeHead(500,{});
+														context.response.write("Internal Server Error");
+														context.response.end();
+														// context.response.writeHead(302,{'Location':'/img/notfound.png'});
+														// context.response.end();
 													}
 												}),
 												function (err) {
 													// console.log(err);
-													self.response.writeHead(404,{});
-													self.response.write(err);
-													self.response.end();
+													context.response.writeHead(404,{});
+													context.response.write(err);
+													context.response.end();
 												}
 											);
 										}))
 									}))
 								}))
 							} else {
-								self.response.writeHead(response.statusCode,response.headers);
-								if (body) self.response.write(body);
-								self.response.end();
+								context.response.writeHead(response.statusCode,response.headers);
+								if (body) context.response.write(body);
+								context.response.end();
 							}
 						}))
 					} else {
-						self.response.writeHead(404,{});
-						self.response.write("Not Found");
-						self.response.end();
+						context.response.writeHead(404,{});
+						context.response.write("Not Found");
+						context.response.end();
 					}
 				}
 			})
 		}
 	} catch(e) {
 		eyes({exception: e});
-		self.response.writeHead(500,{});
-		self.response.write("Internal Server Error");
-		self.response.end();
+		context.response.writeHead(500,{});
+		context.response.write("Internal Server Error");
+		context.response.end();
 	}
 }
 
-RouterLayer.ironRouter.route('/image/file/:id?/:method?/:width?/:height?', function() {
-	var self=this;
-	preProcess(ImageFiles.collection,self.params.id,self.params.method,self.params.width,self.params.height,self.request,function(err,myData) {
+
+ImageFiles.routeFile=function(context) {
+	preProcess(ImageFiles.collection,context.params.id,context.params.method,context.params.width,context.params.height,context.request,function(err,myData) {
 		if (err || !myData) {
-			self.response.writeHead(404,{});
-			self.response.write("Not Found");
-			self.response.end();
+			context.response.writeHead(404,{});
+			context.response.write("Not Found");
+			context.response.end();
 		} else {
 			if (myData && myData.derivate) {
-				ImageFiles.routeDerivate(self,myData);
+				ImageFiles.routeDerivate(context,myData);
 			} else {
-				ImageFiles.routeOriginal(self,myData);
+				ImageFiles.routeOriginal(context,myData);
 			}
 		}
 	});
-}, {where: 'server'});
+}
 
-RouterLayer.ironRouter.route('/image/:collection?/:id?/:method?/:width?/:height?', function() {
-	var self=this;
-	preProcess(self.params.collection,self.params.id,self.params.method,self.params.width,self.params.height,self.request,function(err,myData) {
+if (RouterLayer && RouterLayer.ironRouter) {
+  RouterLayer.ironRouter.route('/image/file/:id?/:method?/:width?/:height?', function() {
+  	ImageFiles.routeFile(this);
+  }, {where: 'server'})
+} else {
+  Picker.route('/image/file/:id?/:method?/:width?/:height?', function( params, request, response, next ) {
+  	ImageFiles.routeFile({params: params, request: request, response: response, next: next});
+  })
+}
+
+ImageFiles.routeCollection=function(context) {
+	preProcess(context.params.collection,context.params.id,context.params.method,context.params.width,context.params.height,context.request,function(err,myData) {
 		if (err || !myData) {
-			self.response.writeHead(404,{});
-			self.response.write("Not Found");
-			self.response.end();
+			context.response.writeHead(404,{});
+			context.response.write("Not Found");
+			context.response.end();
 		} else {
 			if (myData.derivate) {
-				ImageFiles.routeDerivate(self,myData);
+				ImageFiles.routeDerivate(context,myData);
 			} else {
-				ImageFiles.routeOriginal(self,myData);
+				ImageFiles.routeOriginal(context,myData);
 			}
 		}
 	});
-}, {where: 'server'});
+}
+
+if (RouterLayer && RouterLayer.ironRouter) {
+  RouterLayer.ironRouter.route('/image/:collection?/:id?/:method?/:width?/:height?', function() {
+	  ImageFiles.routeCollection(this)
+  }, {where: 'server'});
+} else {
+  Picker.route('/image/:collection?/:id?/:method?/:width?/:height?', function( params, request, response, next ) {
+  	ImageFiles.routeFile({params: params, request: request, response: response, next: next});
+  })
+}
+
 
 ImageFiles.registerCollection('orion',function(id,callback) {
 	var result={};
