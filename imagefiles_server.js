@@ -453,8 +453,8 @@ ImageFiles.routeOriginal=function(context,myData) {
 				} else {
 					if (debug) eyes(myData);
 					if (debug) eyes('request');
-					var urlParse=url.parse(myData.link);
-					if (urlParse.hostname && urlParse.protocol) {
+					var urlParse=myData.link?url.parse(myData.link):null;
+					if (urlParse && urlParse.hostname && urlParse.protocol) {
 						return request({uri:myData.link,encoding:'binary'},Meteor.bindEnvironment(function(error, response, body) {
 							if (error) throw error;
 							if (debug) eyes({response:response.headers});
@@ -595,8 +595,8 @@ ImageFiles.routeDerivate=function(context,myData) {
 					if (debug) eyes(myData);
 				} else {
 					if (debug) eyes('request');
-					var urlParse=url.parse(myData.link);
-					if (urlParse.hostname && urlParse.protocol) {
+					var urlParse=myData.link?url.parse(myData.link):null;
+					if (urlParse && urlParse.hostname && urlParse.protocol) {
 						return request({uri:myData.link,encoding:'binary'},Meteor.bindEnvironment(function(error, response, body) {
 							if (error) throw error;
 							if (body && response.statusCode==200) {
