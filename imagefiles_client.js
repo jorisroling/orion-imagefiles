@@ -405,3 +405,21 @@ function mimetype2fa (mimetype, options) {
     }
   }
 }
+
+
+
+
+
+
+
+
+Template.registerHelper('orionImage', function(url,width,height) 
+{
+  let result = url.replace('/gridfs/data/id/','/image/orion/')
+  if (width || height) {
+    result+='/resize/'+(width?width:'0')+(height?('/'+height):'')
+  }
+	return result;
+});
+
+

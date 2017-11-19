@@ -1,9 +1,6 @@
 ImageFiles={collection:'image.files'}
 
-
-
-var debug=false;
-
+var debug = yves.debugger('image:files')
 
 Meteor.startup(function() {
 	// ImageFilesCollection._ensureIndex({'filename':'text','metadata.original':'text','metadata.title':'text','metadata.description':'text'},{unique:false,background: true});
@@ -21,7 +18,7 @@ Meteor.publish(ImageFiles.collection, function(limit, search) {
 	
 	if (Roles.userHasRole(this.userId,'admin')) {
 		var selector = {};
-		if (debug) eyes({limit,search});
+		debug('publish %y',{limit,search});
 		if (limit) check(limit, Number);
 		if (search) check(search, String);
 		// Assign safe values to a new object after they have been validated
@@ -42,7 +39,7 @@ Meteor.publish(ImageFiles.collection, function(limit, search) {
 			// pollingIntervalMs:5*1000,
 			// pollingThrottleMs:50,
 		});
-		if (debug) eyes({limit,selector,imagefiles:result.count()});
+		debug('publish %y',{limit,selector,imagefiles:result.count()});
 		
 		return result;
 	}
@@ -59,7 +56,7 @@ Meteor.methods({
 		// without waiting for the email sending to complete.
 		this.unblock();
 
-		if (debug) eyes({remove:id});
+		debug('removeImageFile %y',{remove:id});
 		let options={
 			_id: new MongoInternals.NpmModule.ObjectID(id)
 		};
@@ -69,13 +66,13 @@ Meteor.methods({
 		gfs.remove(options,Meteor.bindEnvironment(function (err, result) {
 			if (err) { eyes({err}) }
 			if (result) {
-				if (debug) eyes('remove success');
+				debug('removeImageFile %y','remove success');
 			} else {
-				eyes('ImageFile remove failed on id: '+id);	// Due to failure to get a write lock
+				console.error('ImageFile remove failed on id: '+id);	// Due to failure to get a write lock
 			}
 		}));
 		
-		if (debug) eyes({id});
+		debug('removeImageFile id: %y',{id});
 	},
 });
 
@@ -98,6 +95,7 @@ var async = Npm.require('async');
 
 var imageSize = Npm.require('image-size');
 var imageType = Npm.require('image-type');
+var sharp = Npm.require('sharp');
 
 const fileType = require('file-type');
 /*
@@ -146,7 +144,7 @@ ImageFiles.registerCollection=function(collection,handler) {
 function preProcess(collection,id,method,width,height,request,callback)
 {
 	var result={};
-	if (debug) eyes({request:request.headers});
+	debug('preProcess %y',{request:request.headers});
 	result.cache=((request.query && request.query.cache==='false')?false:(request.headers['cache-control']==='no-cache'?false:true));
 
 	if (method || (request.query && (request.query.method || request.query.derivate))) {
@@ -162,7 +160,7 @@ function preProcess(collection,id,method,width,height,request,callback)
 		}
 		derivate.hash=hash(derivate);
 	
-		if (debug) eyes({derivate});
+		debug('preProcess %y',{derivate});
 		result.derivate=derivate;
 	}
 
@@ -172,7 +170,7 @@ function preProcess(collection,id,method,width,height,request,callback)
       let search = request.url.substr(pos+1)
       let query = search?JSON.parse('{"' + search.replace(/&/g, '","').replace(/=/g,'":"') + '"}',function(key, value) { return key===""?value:decodeURIComponent(value) }):{}
       if (query) {
-        if (debug) eyes({query})
+        debug('preProcess %y',{query})
         request.query = query;
       }
     }
@@ -223,12 +221,13 @@ function preProcess(collection,id,method,width,height,request,callback)
 
 function pipeCachedFile(myData,request,response,callback)
 {
-	if (debug) eyes({myData});
+  console.trace('JJR')
+	debug('pipeCachedFile %y',{myData});
 	if (myData) {
 		if (myData.cache) {
 			var query;
 			if (myData.id && myData.id.length && myData.collection==ImageFiles.collection) {
-				if (debug) eyes({id:myData.id});
+				debug('pipeCachedFile %y',{id:myData.id});
         // query={'_id':new MongoInternals.NpmModule.ObjectID(myData.id)};
 				query={'_id':new Meteor.Collection.ObjectID(myData.id)};
 			} else if (myData.link) {
@@ -240,7 +239,7 @@ function pipeCachedFile(myData,request,response,callback)
 				throw new Error('No clue how to return image B');
 			}
 
-			if (debug) eyes({query});
+			debug('pipeCachedFile %y',{query});
 			var imageFiles=ImageFilesCollection.find(query,{limit:1}).fetch();
 		}
 		if (myData.cache && imageFiles && imageFiles[0]) {
@@ -282,7 +281,7 @@ function pipeCachedFile(myData,request,response,callback)
 							'Max-Age':60*60*24*30,
 							'Cache-Control':'public; max-age=2678400',
 								}
-						if (debug) eyes({myresponse:headers});
+						debug('pipeCachedFile %y',{myresponse:headers});
 						response.writeHead(200, headers);
 						readstream.pipe(response);
 						callback(null,{done:'streamt'})
@@ -318,7 +317,7 @@ ImageFiles.ensureImage=function(myData,callback)
 		var query;
 
 		if (myData.id && myData.id.length && myData.collection==ImageFiles.collection) {
-			if (debug) eyes({id:myData.id});
+			debug('ensureImage %y',{id:myData.id});
 			query={'_id':new MongoInternals.NpmModule.ObjectID(myData.id)};
 		} else if (myData.link) {
 			query={'metadata.original':unescape(myData.original?myData.original:myData.link)};
@@ -328,7 +327,7 @@ ImageFiles.ensureImage=function(myData,callback)
 			return callback(Error('No clue how to return image A'));
 		}
 
-		if (debug) eyes({query});
+		debug('ensureImage %y',{query});
 		var imageFiles=ImageFilesCollection.find(query,{limit:1}).fetch();
 		if (imageFiles && imageFiles[0]) {
 			return callback(null,imageFiles[0])
@@ -337,7 +336,7 @@ ImageFiles.ensureImage=function(myData,callback)
 			if (urlParse.hostname && urlParse.protocol) {
 				return request({uri:myData.link,encoding:'binary'}, Meteor.bindEnvironment(function(error, response, body) {
 					if (error) return callback(error);
-					if (debug) eyes({response:response.headers});
+					debug('ensureImage %y',{response:response.headers});
 
 					if (body && response.statusCode==200) {
 						// eyes({body});
@@ -347,7 +346,7 @@ ImageFiles.ensureImage=function(myData,callback)
 							if (!type) {
 								try {
 									type = imageType(imageData);
-									if (debug) eyes({type});
+									debug('ensureImage %y',{type});
 									type=type && type.mime;
 								} catch (e) {
 									eyes({e});
@@ -356,7 +355,7 @@ ImageFiles.ensureImage=function(myData,callback)
 							var dim;
 							try {
 								dim = imageSize(imageData);
-								if (debug) eyes({dim});
+								debug('ensureImage %y',{dim});
 							} catch (e) {
 								eyes({link:myData.link,type,e});
 							}
@@ -369,11 +368,11 @@ ImageFiles.ensureImage=function(myData,callback)
 
 
 							var fileID=new MongoInternals.NpmModule.ObjectID();
-							// if (debug) eyes({urlParse});
+							// debug('ensureImage %y',{urlParse});
 
 							// var pathParse=path.parse(urlParse.pathname);
 							var baseName=path.basename(urlParse.pathname);
-							// if (debug) eyes({pathParse});
+							// debug('ensureImage %y',{pathParse});
 
 							var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
 
@@ -404,7 +403,7 @@ ImageFiles.ensureImage=function(myData,callback)
 							gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
 								if (writestream) {
 									writestream.on('finish',Meteor.bindEnvironment(function() {
-										if (debug) eyes({id:fileID.toHexString(),finish:myData.link});
+										debug('ensureImage %y',{id:fileID.toHexString(),finish:myData.link});
 								
 										var imageFiles=ImageFilesCollection.find(query,{limit:1}).fetch();
 										if (imageFiles && imageFiles[0]) {
@@ -449,15 +448,15 @@ ImageFiles.routeOriginal=function(context,myData) {
 				if (err) {
 					throw err;
 				} else if (myData && myData.done) {
-					if (debug) eyes(myData);
+					debug('routeOriginal %y',myData);
 				} else {
-					if (debug) eyes(myData);
-					if (debug) eyes('request');
+					debug('routeOriginal %y',myData);
+					debug('routeOriginal %y','request');
 					var urlParse=myData.link?url.parse(myData.link):null;
 					if (urlParse && urlParse.hostname && urlParse.protocol) {
 						return request({uri:myData.link,encoding:'binary'},Meteor.bindEnvironment(function(error, response, body) {
 							if (error) throw error;
-							if (debug) eyes({response:response.headers});
+							debug('routeOriginal %y',{response:response.headers});
 
 							if (body && response.statusCode==200) {
 								// eyes({body});
@@ -467,7 +466,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 									if (!type) {
 										try {
 											type = imageType(imageData);
-											if (debug) eyes({type});
+											debug('routeOriginal %y',{type});
 											type=type && type.mime;
 										} catch (e) {
 											eyes({e});
@@ -477,7 +476,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 									var dim;
 									try {
 										dim = imageSize(imageData);
-										if (debug) eyes({dim});
+										debug('routeOriginal %y',{dim});
 									} catch (e) {
 										eyes({link:myData.link,type,e});
 									}
@@ -487,11 +486,11 @@ ImageFiles.routeOriginal=function(context,myData) {
 									if (debug) console.log('File out read.')
 
 									var fileID=new MongoInternals.NpmModule.ObjectID();
-									// if (debug) eyes({urlParse});
+									// debug('routeOriginal %y',{urlParse});
 
 									// var pathParse=path.parse(urlParse.pathname);
 									var baseName=path.basename(urlParse.pathname);
-									// if (debug) eyes({pathParse});
+									// debug('routeOriginal %y',{pathParse});
 									if (myData.cache) {
 										var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
 					
@@ -521,7 +520,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 										gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
 											if (writestream) {
 												writestream.on('finish', function() {
-													if (debug) eyes({id:fileID.toHexString(),finish:myData.link});
+													debug('routeOriginal %y',{id:fileID.toHexString(),finish:myData.link});
 												});
 
 												var bufferStream = new stream.PassThrough();
@@ -535,7 +534,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 									}
 
 									// response.headers['Content-Length']=file.length;
-									// if (debug) eyes(response.headers);
+									// debug('routeOriginal %y',response.headers);
 									// context.response.writeHead(response.statusCode,response.headers);
 									var headers={
 										// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
@@ -549,7 +548,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 										'Max-Age':60*60*24*30,
 										'Cache-Control':'public; max-age=2678400', // 1 month
 									}
-									if (debug) eyes({response:headers});
+									debug('routeOriginal %y',{response:headers});
 									context.response.writeHead(200,headers);
 									context.response.write(imageData);
 									context.response.end();
@@ -592,9 +591,9 @@ ImageFiles.routeDerivate=function(context,myData) {
 				if (err) {
 					throw err;
 				} else if (myData && myData.done) {
-					if (debug) eyes(myData);
+					debug('routeDerivate %y',myData);
 				} else {
-					if (debug) eyes('request');
+					debug('routeDerivate %y','request');
 					var urlParse=myData.link?url.parse(myData.link):null;
 					if (urlParse && urlParse.hostname && urlParse.protocol) {
 						return request({uri:myData.link,encoding:'binary'},Meteor.bindEnvironment(function(error, response, body) {
@@ -608,7 +607,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 									throw(new Error('Could not establish correct image format'));
 								}
 								
-								if (debug) eyes({headers:response.headers});
+								debug('routeDerivate %y',{headers:response.headers});
 
 								if (!/^image\//.test(response.headers['content-type'])) {
 									// eyes({'content-type':response.headers['content-type']});
@@ -636,15 +635,32 @@ ImageFiles.routeDerivate=function(context,myData) {
 												dst:((/^image\//.test(response.headers['content-type']))?'':'png:')+outpath,
 												extra:[]
 											}
-											//eyes({options:_.extend(opts,myData.derivate.options)})
-											easyimg[myData.derivate.method](_.extend(opts,myData.derivate.options)).then(
+                      function patchWidth(opts) {
+                        console.log({opts})
+                        var ropts=_.extend({},opts)
+                        if (ropts.hasOwnProperty('width') && !ropts.width) ropts.width=99999;
+                        return ropts
+                      }
+                      // yves({options:_.extend(opts,myData.derivate.options)})
+                      let prom
+                      let sizer
+                      if (myData.derivate.method=='resize') {
+                        debug('routeDerivate tool %y','sharp');
+                        sizer='sharp'
+                        prom=sharp(inpath).resize( myData.derivate.options.width ? myData.derivate.options.width : null, myData.derivate.options.height ? myData.derivate.options.height : null).toFile(outpath)
+                      } else {
+                        sizer='easyimg' 
+                        prom=easyimg[myData.derivate.method](patchWidth(_.extend(opts,myData.derivate.options)))
+                      }
+											prom.then(
 												Meteor.bindEnvironment(function(image) {
-													if (debug) eyes({image});
+                          var image_type=(sizer=='sharp')?image.format:image.type;
+													debug('routeDerivate %y',{image});
 													if (debug) console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
-													// if (debug) eyes(response.statusCode);
-													// if (debug) eyes(response.headers);
+													// debug('routeDerivate %y',response.statusCode);
+													// debug('routeDerivate %y',response.headers);
 													if (!error && response && response.statusCode == 200) {
-														fs.readFile((image.type=='mvg')?inpath:outpath, 'binary', Meteor.bindEnvironment(function (err, file) {
+														fs.readFile((image_type=='mvg')?inpath:outpath, 'binary', Meteor.bindEnvironment(function (err, file) {
 
 															var imageData=new Buffer(file.toString(),'binary');
 
@@ -654,11 +670,11 @@ ImageFiles.routeDerivate=function(context,myData) {
 
 
 															var fileID=new MongoInternals.NpmModule.ObjectID();
-															// if (debug) eyes({urlParse});
+															// debug('routeDerivate %y',{urlParse});
 
 															// var pathParse=path.parse(urlParse.pathname);
 															var baseName=path.basename(urlParse.pathname);
-															// if (debug) eyes({pathParse});
+															// debug('routeDerivate %y',{pathParse});
 												
 															if (myData.cache) {
 																var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
@@ -668,7 +684,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 																	filename: baseName,
 																	mode: 'w',
 																	chunkSize: 1024,
-																	content_type: (image.type=='mvg')?response.headers['content-type']:('image/'+image.type),
+																	content_type: (image_type=='mvg')?response.headers['content-type']:('image/'+image_type),
 																	root: gridCollection,
 																	metadata: {
 																		width:image.width,
@@ -686,7 +702,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 																gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
 																	if (writestream) {
 																			writestream.on('finish', function() {
-																			if (debug) eyes({id:fileID.toHexString(),finish:myData.link});
+																			debug('routeDerivate %y',{id:fileID.toHexString(),finish:myData.link});
 																			});
 
 																		var bufferStream = new stream.PassThrough();
@@ -700,7 +716,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 															}
 
 															// response.headers['Content-Length']=file.length;
-															// if (debug) eyes(response.headers);
+															// debug('routeDerivate %y',response.headers);
 															// context.response.writeHead(response.statusCode,response.headers);
 															var headers={
 																// 'Content-Disposition': 'attachment;filename='+imageFiles[0].filename,
@@ -714,7 +730,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 																'Max-Age':60*60*24*30,
 																'Cache-Control':'public; max-age=2678400', // 1 month
 																	}
-															if (debug) eyes({response:headers});
+															debug('routeDerivate %y',{response:headers});
 																	context.response.writeHead(200,headers);
 															context.response.write(imageData);
 																	context.response.end();
@@ -813,7 +829,7 @@ if (RouterLayer && RouterLayer.ironRouter) {
   }, {where: 'server'});
 } else {
   Picker.route('/image/:collection?/:id?/:method?/:width?/:height?', function( params, request, response, next ) {
-  	ImageFiles.routeFile({params: params, request: request, response: response, next: next});
+	  ImageFiles.routeCollection({params: params, request: request, response: response, next: next})
   })
 }
 
@@ -823,7 +839,8 @@ ImageFiles.registerCollection('orion',function(id,callback) {
 	
 	// eyes({files:orion.filesystem.collection.find({},{}).fetch()});
 	// eyes({id});
-
+  // debug('orion %y',{files:orion.filesystem.collection.find({},{}).fetch()});
+  debug('orion %y',{id});
 	let orionFile=orion.filesystem.collection.find({$or:[{_id:id},{'meta.gridFS_id':id}]},{limit:1}).fetch();
 	if (orionFile && orionFile.length) {
 		orionFile=orionFile[0];
