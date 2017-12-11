@@ -1,6 +1,7 @@
 ImageFiles={collection:'image.files'}
 
 var debug = yves.debugger('image:files')
+var verbose = false;
 
 Meteor.startup(function() {
 	// ImageFilesCollection._ensureIndex({'filename':'text','metadata.original':'text','metadata.title':'text','metadata.description':'text'},{unique:false,background: true});
@@ -9,7 +10,7 @@ Meteor.startup(function() {
 		ImageFilesCollection._ensureIndex({'metadata.original':1,'metadata.kind':1,'metadata.derivate.hash':1},{unique:false,background: true});
 		ImageFilesCollection._ensureIndex({'$**':'text','uploadDate':-1},{unique:false,background: true});
 	} catch (e) {
-		console.log({exception:e});
+		console.error({exception:e});
 	}
 	
 });
@@ -95,7 +96,7 @@ var async = Npm.require('async');
 
 var imageSize = Npm.require('image-size');
 var imageType = Npm.require('image-type');
-var sharp = Npm.require('sharp');
+// var sharp = Npm.require('sharp');
 
 const fileType = require('file-type');
 /*
@@ -221,7 +222,6 @@ function preProcess(collection,id,method,width,height,request,callback)
 
 function pipeCachedFile(myData,request,response,callback)
 {
-  console.trace('JJR')
 	debug('pipeCachedFile %y',{myData});
 	if (myData) {
 		if (myData.cache) {
@@ -235,7 +235,6 @@ function pipeCachedFile(myData,request,response,callback)
 				query['metadata.kind']=myData.derivate?'derivate':'original';
 				if (myData.derivate && myData.derivate.hash) query['metadata.derivate.hash']=myData.derivate.hash;
 			} else {
-        console.trace('No clue');
 				throw new Error('No clue how to return image B');
 			}
 
@@ -362,7 +361,7 @@ ImageFiles.ensureImage=function(myData,callback)
 
 							// var imageData=new Buffer(file.toString(),'binary');
 
-							if (debug) console.log('File out read.')
+							if (verbose) console.log('File out read.')
 
 							// if (err) throw err
 
@@ -483,7 +482,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 
 									// var imageData=new Buffer(file.toString(),'binary');
 
-									if (debug) console.log('File out read.')
+									if (verbose) console.log('File out read.')
 
 									var fileID=new MongoInternals.NpmModule.ObjectID();
 									// debug('routeOriginal %y',{urlParse});
@@ -553,7 +552,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 									context.response.write(imageData);
 									context.response.end();
 
-									if (debug) console.log('done.')
+									if (verbose) console.log('done.')
 								} catch (e) {
 									eyes({e});
 									context.response.writeHead(500,{});
@@ -617,17 +616,17 @@ ImageFiles.routeDerivate=function(context,myData) {
 									return;
 								}
 								tmp.file(Meteor.bindEnvironment(function _tempFileCreated(err, inpath, infd, cleanupInTmpCallback) {
-									if (debug) console.log('File in: ', inpath);
-									if (debug) console.log('Filedescriptor in: ', infd);
+									if (verbose) console.log('File in: ', inpath);
+									if (verbose) console.log('Filedescriptor in: ', infd);
 									tmp.file(Meteor.bindEnvironment(function _tempFileCreated(err, outpath, outfd, cleanupOutTmpCallback) {
 										if (err) throw err;
 
-										if (debug) console.log('File out: ', outpath);
-										if (debug) console.log('Filedescriptor out: ', outfd);
+										if (verbose) console.log('File out: ', outpath);
+										if (verbose) console.log('Filedescriptor out: ', outfd);
 
 										fs.writeFile(inpath,body, 'binary',Meteor.bindEnvironment(function(err){
 											if (err) throw err
-											if (debug) console.log('File in saved.')
+											if (verbose) console.log('File in saved.')
 
 
 											var opts={
@@ -636,7 +635,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 												extra:[]
 											}
                       function patchWidth(opts) {
-                        console.log({opts})
+                        // console.log({opts})
                         var ropts=_.extend({},opts)
                         if (ropts.hasOwnProperty('width') && !ropts.width) ropts.width=99999;
                         return ropts
@@ -644,19 +643,19 @@ ImageFiles.routeDerivate=function(context,myData) {
                       // yves({options:_.extend(opts,myData.derivate.options)})
                       let prom
                       let sizer
-                      if (myData.derivate.method=='resize') {
-                        debug('routeDerivate tool %y','sharp');
-                        sizer='sharp'
-                        prom=sharp(inpath).resize( myData.derivate.options.width ? myData.derivate.options.width : null, myData.derivate.options.height ? myData.derivate.options.height : null).toFile(outpath)
-                      } else {
+                      // if (myData.derivate.method=='resize') {
+                      //   debug('routeDerivate tool %y','sharp');
+                      //   sizer='sharp'
+                      //   prom=sharp(inpath).resize( myData.derivate.options.width ? myData.derivate.options.width : null, myData.derivate.options.height ? myData.derivate.options.height : null).toFile(outpath)
+                      // } else {
                         sizer='easyimg' 
                         prom=easyimg[myData.derivate.method](patchWidth(_.extend(opts,myData.derivate.options)))
-                      }
+                      // }
 											prom.then(
 												Meteor.bindEnvironment(function(image) {
                           var image_type=(sizer=='sharp')?image.format:image.type;
 													debug('routeDerivate %y',{image});
-													if (debug) console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
+													if (verbose) console.log('Resized and cropped: ' + image.width + ' x ' + image.height);
 													// debug('routeDerivate %y',response.statusCode);
 													// debug('routeDerivate %y',response.headers);
 													if (!error && response && response.statusCode == 200) {
@@ -664,7 +663,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 
 															var imageData=new Buffer(file.toString(),'binary');
 
-															if (debug) console.log('File out read.')
+															if (verbose) console.log('File out read.')
 
 															if (err) throw err
 
@@ -737,7 +736,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 
 															cleanupInTmpCallback();
 															cleanupOutTmpCallback();
-															if (debug) console.log('done.')
+															if (verbose) console.log('done.')
 
 														}));
 													} else {

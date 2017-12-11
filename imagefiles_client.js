@@ -1,13 +1,5 @@
 let IMAGEFILE_IMAGE_WIDTH=330;
 
-
-
-
-
-
-
-
-
 /**
  * Register the link
  */
@@ -42,7 +34,6 @@ var rndImage = function(callback) {
             "Accept":"application/json"
           },
         },function(error, result) {
-			// console.log({http:result});
 			  _.each(result.data.photos,function(photo){
 				  rndImages.push({link:photo.image_url[0],title:photo.name,description:photo.description});
 			  });
@@ -81,7 +72,6 @@ var IMAGE_FILES_INCREMENT = 12;
 
 // whenever #imageFilesShowMoreResults becomes visible, retrieve more results
 function imageFilesShowMoreResults() {
-    // console.log('imageFilesShowMoreResults');
     var threshold, target = $('#imageFilesShowMoreResults');
     if (!target.length) return;
  
@@ -90,13 +80,11 @@ function imageFilesShowMoreResults() {
  
     if (target.offset().top < threshold) {
         if (!target.data('visible')) {
-            // console.log('imageFiles target became visible (inside viewable area)');
             target.data('visible', true);
             Session.set('imageFilesLimit',Session.get('imageFilesLimit') + IMAGE_FILES_INCREMENT);
         }
     } else {
         if (target.data('visible')) {
-            // console.log('imageFiles target became invisible (below viewable arae)');
             target.data('visible', false);
         }
     }        
@@ -107,8 +95,6 @@ ReactiveTemplates.onCreated('orionImageFiles', function() {
 	var self=this;
 	// self.subscribe('image.files',Session.get('imageFilesLimit'),Session.get('imageFilesSearch'));
 	this.autorun(function() {
-		// console.log({imageFilesLimit:Session.get('imageFilesLimit'),imageFilesSearch:Session.get('imageFilesSearch')});
-		// Meteor.subscribe('imageFilesInfinite',Session.get('imageFilesLimit'),Session.get('imageFilesSearch'));
 		self.subscribe('image.files',Session.get('imageFilesLimit'),Session.get('imageFilesSearch'));
     });
     Session.setDefault('imageFilesLimit', IMAGE_FILES_INCREMENT);
@@ -157,7 +143,6 @@ ReactiveTemplates.helpers('orionImageFiles', {
 
 function search(value)
 {
-	// console.log(value);
 	let rvalue=Session.get('imageFilesSearch')||'';
 	if (!value) value='';
 	if (rvalue!=value) {
@@ -169,7 +154,6 @@ function search(value)
 ReactiveTemplates.events('orionImageFiles', {
 	'click .image-preview':function(e) {
 		rndImage(function(err,img) {
-			// console.log({img});
 			if (Array.isArray(img) && img.length) img=img[0];
 			var src='/image?url='+encodeURIComponent(img.link);
 			if (img.title && img.title.length) src+='&title='+encodeURIComponent(img.title);
@@ -191,7 +175,6 @@ ReactiveTemplates.events('orionImageFiles', {
 		search(e.target.imagesearch.value);
 	},
 	'click .remove-search': function(e) {
-		// console.log('rs');
 	    Session.set('imageFilesLimit', IMAGE_FILES_INCREMENT);
 	    Session.set('imageFilesSearch', '');
 	},
@@ -206,7 +189,6 @@ ReactiveTemplates.events('orionImageFiles', {
 
 function grabId(id)
 {
-	// console.log(id);
 	if (typeof id=='object' && id.id) id=id.id;
 	if (typeof id=='string') {
 			//ObjectID("56cb3263d4d84c1558605467")
@@ -278,7 +260,6 @@ Template.imageFileCard.helpers({
 		return 'auto';
 	},
 	ago() {
-		// console.log({uploadDate:this.uploadDate,m:moment(this.uploadDate).fromNow()})
 		return moment(this.uploadDate).fromNow();
 	},
 	isImage() {
@@ -305,8 +286,6 @@ Template.imageFileCard.events({
 		e.preventDefault();
 		
 		var id=e.target.parentNode.parentNode.parentNode.dataset.isotopeItemId;
-		// console.log({e});
-		// console.log({this._id});
 		var self=this;
 		if (id) {
 			bootbox.confirm('Are you sure you want to remove this image?', function(result) {
@@ -315,7 +294,7 @@ Template.imageFileCard.events({
 				}
 			}); 
 		} else {
-			console.log({e});
+			console.error({e});
 		}
 	},
 });
