@@ -65,7 +65,7 @@ Meteor.methods({
 		var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
 
 		gfs.remove(options,Meteor.bindEnvironment(function (err, result) {
-			if (err) { eyes({err}) }
+			if (err) { yves({err}) }
 			if (result) {
 				debug('removeImageFile %y','remove success');
 			} else {
@@ -305,7 +305,7 @@ ImageFiles.ensureImages=function(myList,callback)
 			});
 		}),callback);		
 	} catch (e) {
-		eyes({e});
+		yves({e});
 		return callback(new Error(e.message));
 	}
 }
@@ -338,7 +338,7 @@ ImageFiles.ensureImage=function(myData,callback)
 					debug('ensureImage %y',{response:response.headers});
 
 					if (body && response.statusCode==200) {
-						// eyes({body});
+						// yves({body});
 						var imageData=new Buffer(body,'binary');
 						try {
 							var type=response.headers['content-type'];
@@ -348,7 +348,7 @@ ImageFiles.ensureImage=function(myData,callback)
 									debug('ensureImage %y',{type});
 									type=type && type.mime;
 								} catch (e) {
-									eyes({e});
+									yves({e});
 								}
 							}
 							var dim;
@@ -356,7 +356,7 @@ ImageFiles.ensureImage=function(myData,callback)
 								dim = imageSize(imageData);
 								debug('ensureImage %y',{dim});
 							} catch (e) {
-								eyes({link:myData.link,type,e});
+								yves({link:myData.link,type,e});
 							}
 
 							// var imageData=new Buffer(file.toString(),'binary');
@@ -422,7 +422,7 @@ ImageFiles.ensureImage=function(myData,callback)
 							}));
 
 						} catch (e) {
-							eyes({e});
+							yves({e});
 							return callback(new Error(e.message));
 						}
 					} else {
@@ -434,7 +434,7 @@ ImageFiles.ensureImage=function(myData,callback)
 			}
 		}
 	} catch (e) {
-		eyes({e});
+		yves({e});
 		return callback(new Error(e.message));
 	}
 }
@@ -458,7 +458,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 							debug('routeOriginal %y',{response:response.headers});
 
 							if (body && response.statusCode==200) {
-								// eyes({body});
+								// yves({body});
 								var imageData=new Buffer(body,'binary');
 								try {
 									var type=response.headers['content-type'];
@@ -468,7 +468,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 											debug('routeOriginal %y',{type});
 											type=type && type.mime;
 										} catch (e) {
-											eyes({e});
+											yves({e});
 										}
 									}
 
@@ -477,7 +477,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 										dim = imageSize(imageData);
 										debug('routeOriginal %y',{dim});
 									} catch (e) {
-										eyes({link:myData.link,type,e});
+										yves({link:myData.link,type,e});
 									}
 
 									// var imageData=new Buffer(file.toString(),'binary');
@@ -554,7 +554,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 
 									if (verbose) console.log('done.')
 								} catch (e) {
-									eyes({e});
+									yves({e});
 									context.response.writeHead(500,{});
 									context.response.write("Internal Server Error");
 									context.response.end();
@@ -574,7 +574,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 			})
 		}
 	} catch (e) {
-		eyes({exception: e});
+		yves({exception: e});
 		context.response.writeHead(500,{});
 		context.response.write("Internal Server Error");
 		context.response.end();
@@ -602,17 +602,17 @@ ImageFiles.routeDerivate=function(context,myData) {
 								var fimageData=new Buffer(body,'binary');
 								let ftype=fileType(fimageData);
 								if (!ftype || !ftype.mime || !ftype.mime.match(/^image\//)) {
-									eyes({bad_ftype:ftype});
+									yves({bad_ftype:ftype});
 									throw(new Error('Could not establish correct image format'));
 								}
 								
 								debug('routeDerivate %y',{headers:response.headers});
 
 								if (!/^image\//.test(response.headers['content-type'])) {
-									// eyes({'content-type':response.headers['content-type']});
+									// yves({'content-type':response.headers['content-type']});
 									context.response.writeHead(301,{Location:myData.link});
 									context.response.end();
-									// eyes({Location:myData.link});
+									// yves({Location:myData.link});
 									return;
 								}
 								tmp.file(Meteor.bindEnvironment(function _tempFileCreated(err, inpath, infd, cleanupInTmpCallback) {
@@ -695,7 +695,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 																	},
 																	aliases: []
 																}
-																// eyes({myData});
+																// yves({myData});
 																for (var k in myData) if (k!='link' && k!='cache') options.metadata[k]=myData[k];
 																if (!options.metadata.title) options.metadata.title=baseName.replace(/[a-f0-9]{32,32}/i,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
 																gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
@@ -772,7 +772,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 			})
 		}
 	} catch(e) {
-		eyes({exception: e});
+		yves({exception: e});
 		context.response.writeHead(500,{});
 		context.response.write("Internal Server Error");
 		context.response.end();
@@ -836,8 +836,8 @@ if (RouterLayer && RouterLayer.ironRouter) {
 ImageFiles.registerCollection('orion',function(id,callback) {
 	var result={};
 	
-	// eyes({files:orion.filesystem.collection.find({},{}).fetch()});
-	// eyes({id});
+	// yves({files:orion.filesystem.collection.find({},{}).fetch()});
+	// yves({id});
   // debug('orion %y',{files:orion.filesystem.collection.find({},{}).fetch()});
   debug('orion %y',{id});
 	let orionFile=orion.filesystem.collection.find({$or:[{_id:id},{'meta.gridFS_id':id}]},{limit:1}).fetch();
@@ -846,7 +846,7 @@ ImageFiles.registerCollection('orion',function(id,callback) {
 		if (orionFile.url) result.link=orionFile.url;
 		if (orionFile.name) result.title=orionFile.name;
 		// result.file={};
-		// eyes({result});
+		// yves({result});
 		// callback(null,result);
 	} else {
 		result.link='/gridfs/data/id/'+id;

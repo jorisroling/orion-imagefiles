@@ -28,20 +28,19 @@ var rndImage = function(callback) {
 
 		var url='https://api.500px.com/v1/photos?feature=popular&page='+page_nr+'&image_size[]=4&consumer_key='+consumer_key;
 
-        return Meteor.http.call('GET', url, {
-          headers: {
-            "content-type":"application/json",
-            "Accept":"application/json"
-          },
-        },function(error, result) {
-			  _.each(result.data.photos,function(photo){
-				  rndImages.push({link:photo.image_url[0],title:photo.name,description:photo.description});
-			  });
-		  	if (rndImages && rndImages.length) {
-		  		return callback(null,rndImages.splice(0,1));
-		  	}
+    return HTTP.call('GET', url, {
+      headers: {
+        "content-type":"application/json",
+        "Accept":"application/json"
+      },
+    },function(error, result) {
+      _.each(result.data.photos,function(photo){
+		    rndImages.push({link:photo.image_url[0],title:photo.name,description:photo.description});
+      });
+	  	if (rndImages && rndImages.length) {
+	  		return callback(null,rndImages.splice(0,1));
+	  	}
 		})
-
 	}
 	if (rndImages && rndImages.length) {
 		return callback(null,rndImages.splice(0,1));
@@ -288,11 +287,24 @@ Template.imageFileCard.events({
 		var id=e.target.parentNode.parentNode.parentNode.dataset.isotopeItemId;
 		var self=this;
 		if (id) {
-			bootbox.confirm('Are you sure you want to remove this image?', function(result) {
-				if (result) {
-					Meteor.call('removeImageFile',grabId(self._id));
-				}
-			}); 
+			bootbox.confirm({
+          message: 'Are you sure you want to remove this image?',
+          buttons: {
+              confirm: {
+                  label: 'Yes',
+                  className: 'btn-danger'
+              },
+              cancel: {
+                  label: 'Cancel',
+                  className: 'btn-default'
+              }
+          },
+          callback: function (result) {
+    				if (result) {
+    					Meteor.call('removeImageFile',grabId(self._id));
+    				}
+          }
+      }); 
 		} else {
 			console.error({e});
 		}
