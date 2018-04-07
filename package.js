@@ -1,7 +1,7 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '1.0.76',
+	version: '1.0.78',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
@@ -12,7 +12,7 @@ Package.onUse(function(api) {
 		'http@1.2.9',
 		'less@2.7.9',
 		'ecmascript@0.8.2',
-		'orionjs:core@1.8.1',
+		'orionjs:core@1.8.0',
 		'orionjs:accounts@1.8.1',
 		'nicolaslopezj:roles@2.6.4',
 		'raix:handlebar-helpers@0.2.5',
