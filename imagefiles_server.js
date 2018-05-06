@@ -201,8 +201,8 @@ function preProcess(collection,id,method,width,height,request,callback)
 					if (!link.host || !link.protocol) result.original=result.link;
 					if (!link.host && request.headers.host) link.host=request.headers.host;
 					if (!link.host) link.host='localhost';
-					if (!link.protocol && request.headers['x-forwarded-proto']) link.protocol=request.headers['x-forwarded-proto'];
-					if (!link.protocol) link.protocol='http';
+					if (!link.protocol && request.headers['x-forwarded-proto'] && request.headers['x-forwarded-proto'].indexOf('https')>=0) link.protocol='https:';
+					if (!link.protocol) link.protocol='http:';
 					
 					result.link=url.format(link);
 
