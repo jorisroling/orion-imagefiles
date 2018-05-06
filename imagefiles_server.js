@@ -196,6 +196,8 @@ function preProcess(collection,id,method,width,height,request,callback)
 					
 					let link=url.parse(result.link);
 					
+          debug('preProcess A %y',{link,result});
+          
 					if (!link.host || !link.protocol) result.original=result.link;
 					if (!link.host && request.headers.host) link.host=request.headers.host;
 					if (!link.host) link.host='localhost';
@@ -203,6 +205,8 @@ function preProcess(collection,id,method,width,height,request,callback)
 					if (!link.protocol) link.protocol='http';
 					
 					result.link=url.format(link);
+
+          debug('preProcess B %y',{link,result});
 					
 					callback(null,result);
 				}
