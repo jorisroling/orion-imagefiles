@@ -602,17 +602,18 @@ ImageFiles.routeDerivate=function(context,myData) {
 								var fimageData=new Buffer(body,'binary');
 								let ftype=fileType(fimageData);
 								if (!ftype || !ftype.mime || !ftype.mime.match(/^image\//)) {
-									yves({bad_ftype:ftype});
-									throw(new Error('Could not establish correct image format'));
+  								debug('bad ftype %y',ftype);
+                  // console.error('Could not establish correct image format');
+									context.response.writeHead(301,{Location:myData.link});
+									context.response.end();
+									return;
 								}
 								
 								debug('routeDerivate %y',{headers:response.headers});
 
-								if (!/^image\//.test(response.headers['content-type'])) {
-									// yves({'content-type':response.headers['content-type']});
+								if (!/^image\//.test(response.headers['content-type']) || (ftype && ftype.mime === 'image/x-icon')) {
 									context.response.writeHead(301,{Location:myData.link});
 									context.response.end();
-									// yves({Location:myData.link});
 									return;
 								}
 								tmp.file(Meteor.bindEnvironment(function _tempFileCreated(err, inpath, infd, cleanupInTmpCallback) {
