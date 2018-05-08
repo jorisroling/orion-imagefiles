@@ -1,7 +1,7 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '1.0.81',
+	version: '1.0.82',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
@@ -19,7 +19,6 @@ Package.onUse(function(api) {
 		'jorisroling:yves@1.0.47',
 		'momentjs:moment@2.18.1',
 		'tmeasday:publish-counts@0.8.0',
-    'meteorhacks:picker@1.0.3',
 	]);
 
 	api.use(['orionjs:bootstrap@1.8.0'], 'client', { weak: true });
@@ -45,6 +44,7 @@ Package.onUse(function(api) {
 		"image-size":"0.6.1",
 		"async":"2.6.0",
 		'file-type':'6.1.0',
+    'path-to-regexp':'2.2.1',
 	});
 
 	api.addAssets('loading.gif','client')

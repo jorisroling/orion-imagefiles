@@ -1,7 +1,12 @@
 ImageFiles={collection:'image.files'}
 
+import { WebApp } from 'meteor/webapp';
+
+
 var debug = yves.debugger('image:files')
 var verbose = false;
+
+var pathToRegexp = Npm.require('path-to-regexp')
 
 Meteor.startup(function() {
 	// ImageFilesCollection._ensureIndex({'filename':'text','metadata.original':'text','metadata.title':'text','metadata.description':'text'},{unique:false,background: true});
@@ -806,8 +811,17 @@ if (RouterLayer && RouterLayer.ironRouter) {
   	ImageFiles.routeFile(this);
   }, {where: 'server'})
 } else {
-  Picker.route('/image/file/:id?/:method?/:width?/:height?', function( params, request, response, next ) {
-  	ImageFiles.routeFile({params: params, request: request, response: response, next: next});
+  const image_file_keys=[]
+  const image_file_re = pathToRegexp('/image/file/:id?/:method?/:width?/:height?',image_file_keys)
+  WebApp.connectHandlers.use((req, res, next) => {
+    const matches = image_file_re.exec(req.url)
+    if (matches) {
+      let params={}
+      for (let m=1;m<matches.length;m++) if (typeof matches[m] != 'undefined') params[image_file_keys[m-1].name] = matches[m];
+      ImageFiles.routeFile({params: params, request: req, response: res, next: next});
+    } else {
+      next();
+    }
   })
 }
 
@@ -832,8 +846,19 @@ if (RouterLayer && RouterLayer.ironRouter) {
 	  ImageFiles.routeCollection(this)
   }, {where: 'server'});
 } else {
-  Picker.route('/image/:collection?/:id?/:method?/:width?/:height?', function( params, request, response, next ) {
-	  ImageFiles.routeCollection({params: params, request: request, response: response, next: next})
+  const image_collection_keys=[]
+  const image_collection_re = pathToRegexp('/image/:collection?/:id?/:method?/:width?/:height?',image_collection_keys)
+      // yves({image_collection_keys})
+  WebApp.connectHandlers.use((req, res, next) => {
+    const matches = image_collection_re.exec(req.url)
+    if (matches) {
+      let params={}
+      for (let m=1;m<matches.length;m++) if (typeof matches[m] != 'undefined') params[image_collection_keys[m-1].name] = matches[m];
+      // yves({params})
+      ImageFiles.routeCollection({params: params, request: req, response: res, next: next})
+    } else {
+      next();
+    }
   })
 }
 
