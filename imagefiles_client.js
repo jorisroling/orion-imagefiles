@@ -1,8 +1,5 @@
 let IMAGEFILE_IMAGE_WIDTH=330;
 
-/**
- * Register the link
- */
 Tracker.autorun(function() {
   orion.links.add({
     index: 9150,
@@ -14,37 +11,10 @@ Tracker.autorun(function() {
   });
 });
 
-var getRandomInt = function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-var rndImages=[];
 var rndImage = function(callback) {
-	if (!rndImages || !rndImages.length) {
-		rndImages=[];
-
-		var page_nr=getRandomInt(1,200);
-		var consumer_key='vyhxftLMD6xO9Ev0rcL3qxZYd1v2UuZ58TwVm48v';
-
-		var url='https://api.500px.com/v1/photos?feature=popular&page='+page_nr+'&image_size[]=4&consumer_key='+consumer_key;
-
-    return HTTP.call('GET', url, {
-      headers: {
-        "content-type":"application/json",
-        "Accept":"application/json"
-      },
-    },function(error, result) {
-      _.each(result.data.photos,function(photo){
-		    rndImages.push({link:photo.image_url[0],title:photo.name,description:photo.description});
-      });
-	  	if (rndImages && rndImages.length) {
-	  		return callback(null,rndImages.splice(0,1));
-	  	}
-		})
-	}
-	if (rndImages && rndImages.length) {
-		return callback(null,rndImages.splice(0,1));
-	}
+  Meteor.call('randomPexelImage',(err,photo) => {
+    if (photo) callback(null,{link:photo.src.large2x,title:'by '+photo.photographer,description:''})
+  });
 }
 
 function clear_html(html)
@@ -53,7 +23,7 @@ function clear_html(html)
 }
 
 function excerpt(html,count)
-{	
+{
 	var text=clear_html(html)
 	if (count) text=text.substring(0,count)
 	text=text.trim();
@@ -73,10 +43,10 @@ var IMAGE_FILES_INCREMENT = 12;
 function imageFilesShowMoreResults() {
     var threshold, target = $('#imageFilesShowMoreResults');
     if (!target.length) return;
- 
+
     threshold = $(window).scrollTop() + $(window).height() - target.height() + ($(window).height() /3);
     // threshold = $(window).scrollTop() + $(window).height() - target.height();
- 
+
     if (target.offset().top < threshold) {
         if (!target.data('visible')) {
             target.data('visible', true);
@@ -86,7 +56,7 @@ function imageFilesShowMoreResults() {
         if (target.data('visible')) {
             target.data('visible', false);
         }
-    }        
+    }
 }
 
 ReactiveTemplates.onCreated('orionImageFiles', function() {
@@ -113,7 +83,7 @@ function setResizer()
 
 ReactiveTemplates.onRendered('orionImageFiles', function() {
 	$('[data-toggle="tooltip"]').tooltip();
-	
+
 	setResizer();
 	for (let i=0;i<10;i++) Meteor.setTimeout(setResizer,i*1000);
 })
@@ -181,7 +151,7 @@ ReactiveTemplates.events('orionImageFiles', {
 
 
 
- 
+
 
 
 
@@ -190,7 +160,7 @@ function grabId(id)
 {
 	if (typeof id=='object' && id.id) id=id.id;
 	if (typeof id=='string') {
-			//ObjectID("56cb3263d4d84c1558605467")
+			//ObjectID('56cb3263d4d84c1558605467')
 		var myRegexp=/^ObjectID\("(.*?)"\)$/
 		var match = myRegexp.exec(id);
 		if (match && match.length>1 && match[1]) {
@@ -277,13 +247,13 @@ Template.imageFileCard.events({
 			remote:e.target.src,
 			title:this.title,
 			footer:this.description,
-			type:'image' 
+			type:'image'
 		};
 		$(e.target).ekkoLightbox(options);
 	},
 	'click .imageFileRemove': function(e){
 		e.preventDefault();
-		
+
 		var id=e.target.parentNode.parentNode.parentNode.dataset.isotopeItemId;
 		var self=this;
 		if (id) {
@@ -304,7 +274,7 @@ Template.imageFileCard.events({
     					Meteor.call('removeImageFile',grabId(self._id));
     				}
           }
-      }); 
+      });
 		} else {
 			console.error({e});
 		}
@@ -399,12 +369,7 @@ function mimetype2fa (mimetype, options) {
 
 
 
-
-
-
-
-
-Template.registerHelper('orionImage', function(url,width,height) 
+Template.registerHelper('orionImage', function(url,width,height)
 {
   let result = url.replace('/gridfs/data/id/','/image/orion/')
   if (width || height) {

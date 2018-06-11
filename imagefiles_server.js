@@ -17,11 +17,11 @@ Meteor.startup(function() {
 	} catch (e) {
 		console.error({exception:e});
 	}
-	
+
 });
 
 Meteor.publish(ImageFiles.collection, function(limit, search) {
-	
+
 	if (Roles.userHasRole(this.userId,'admin')) {
 		var selector = {};
 		debug('publish %y',{limit,search});
@@ -46,12 +46,15 @@ Meteor.publish(ImageFiles.collection, function(limit, search) {
 			// pollingThrottleMs:50,
 		});
 		debug('publish %y',{limit,selector,imagefiles:result.count()});
-		
+
 		return result;
 	}
 });
 
 var Grid = Npm.require('gridfs-locking-stream');
+
+const PexelsAPI = Npm.require('pexels-api-wrapper');
+const pexelsClient = new PexelsAPI('563492ad6f9170000100000196bd6706d96943218af4a70de9ad3e47');
 
 // In your server code: define a method that the client can call
 Meteor.methods({
@@ -77,9 +80,20 @@ Meteor.methods({
 				console.error('ImageFile remove failed on id: '+id);	// Due to failure to get a write lock
 			}
 		}));
-		
+
 		debug('removeImageFile id: %y',{id});
 	},
+  randomPexelImage: function() {
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    const page_nr=getRandomInt(1,100);
+    // const data=Promise.await(pexelsClient.getPopularPhotos(10, page_nr))
+    const data=Promise.await(pexelsClient.search('nature girl', 10, page_nr))
+
+
+    return data.photos[getRandomInt(0,data.photos.length)]
+  },
 });
 
 
@@ -139,7 +153,7 @@ http://localhost.charlesproxy.com:8000/image?url=http://slodive.com/wp-content/u
 
 http://localhost.charlesproxy.com:8000/derivate?url=http://slodive.com/wp-content/uploads/2012/05/marilyn-monroe-pictures/marilyn-monroe-roxbury.jpg&method=thumbnail&width=100&height=100&x=0&y=0
 
-*/																
+*/
 
 ImageFiles.collectionHandlers={};
 
@@ -165,7 +179,7 @@ function preProcess(collection,id,method,width,height,request,callback)
 			}
 		}
 		derivate.hash=hash(derivate);
-	
+
 		debug('preProcess %y',{derivate});
 		result.derivate=derivate;
 	}
@@ -181,7 +195,7 @@ function preProcess(collection,id,method,width,height,request,callback)
       }
     }
   }
-	
+
   if (request.query) {
   	if (request.query.url) result.link=unescape(request.query.url);
   	if (request.query.title) result.title=request.query.title;
@@ -198,21 +212,21 @@ function preProcess(collection,id,method,width,height,request,callback)
 					if (res) for (var k in res) result[k]=res[k];
 					if (result.derivate && result.derivate.hash) delete result.derivate.hash;
 					if (result.derivate) result.derivate.hash=hash(result.derivate);
-					
+
 					let link=url.parse(result.link);
-					
+
           debug('preProcess A %y',{link,result});
-          
+
 					if (!link.host || !link.protocol) result.original=result.link;
 					if (!link.host && request.headers.host) link.host=request.headers.host;
 					if (!link.host) link.host='localhost';
 					if (!link.protocol && request.headers['x-forwarded-proto'] && request.headers['x-forwarded-proto'].indexOf('https')>=0) link.protocol='https:';
 					if (!link.protocol) link.protocol='http:';
-					
+
 					result.link=url.format(link);
 
           debug('preProcess B %y',{link,result});
-					
+
 					callback(null,result);
 				}
 			});
@@ -251,13 +265,13 @@ function pipeCachedFile(myData,request,response,callback)
 			var imageFiles=ImageFilesCollection.find(query,{limit:1}).fetch();
 		}
 		if (myData.cache && imageFiles && imageFiles[0]) {
-	
+
 			if (imageFiles[0].md5 === request.headers['if-none-match']) {
 						response.writeHead(304, {});
 				response.end();
 				return callback(null,{done:'not-modified-etag'})
 			}
-	
+
 			let lastModified=moment(imageFiles[0].uploadDate).format('ddd, DD MMM YYYY HH:mm:ss')+' GMT';
 
 			if (lastModified === request.headers['if-modified-since']) {
@@ -265,12 +279,12 @@ function pipeCachedFile(myData,request,response,callback)
 				response.end();
 				return callback(null,{done:'not-modified-date'})
 			}
-	
+
 			let options={
 				_id: new MongoInternals.NpmModule.ObjectID(imageFiles[0]._id.valueOf())//imageFiles[0]._id.valueOf(),
 			};
 			var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
-	
+
 			gfs.createReadStream(options,Meteor.bindEnvironment(function (error, readstream) {
 				if (error) {
 					callback(error);
@@ -305,21 +319,21 @@ function pipeCachedFile(myData,request,response,callback)
 	}
 }
 
-ImageFiles.ensureImages=function(myList,callback) 
+ImageFiles.ensureImages=function(myList,callback)
 {
 	try {
 		async.map(myList,Meteor.bindEnvironment(function(myData, callback) {
 			ImageFiles.ensureImage(myData,function(err,result) {
 				return callback(null,result);
 			});
-		}),callback);		
+		}),callback);
 	} catch (e) {
 		yves({e});
 		return callback(new Error(e.message));
 	}
 }
 
-ImageFiles.ensureImage=function(myData,callback) 
+ImageFiles.ensureImage=function(myData,callback)
 {
 	try {
 		var query;
@@ -402,17 +416,17 @@ ImageFiles.ensureImage=function(myData,callback)
 							}
 							// if (dim && dim.width) options.metadata.width=dim.width;
 							// if (dim && dim.height) options.metadata.height=dim.height;
-			
+
 							for (var k in myData) if (k!='link' && k!='cache') options.metadata[k]=myData[k];
 							if (!options.metadata.name) options.metadata.name=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
 							if (!options.metadata.title) options.metadata.title=options.metadata.name;
-						
-				
+
+
 							gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
 								if (writestream) {
 									writestream.on('finish',Meteor.bindEnvironment(function() {
 										debug('ensureImage %y',{id:fileID.toHexString(),finish:myData.link});
-								
+
 										var imageFiles=ImageFilesCollection.find(query,{limit:1}).fetch();
 										if (imageFiles && imageFiles[0]) {
 											return callback(null,imageFiles[0])
@@ -451,7 +465,7 @@ ImageFiles.ensureImage=function(myData,callback)
 ImageFiles.routeOriginal=function(context,myData) {
 	try {
 		if ((context.request.query && context.request.query.url) || context.params.id) {
-		
+
 			pipeCachedFile(myData,context.request,context.response,function(err,myData) {
 				if (err) {
 					throw err;
@@ -501,7 +515,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 									// debug('routeOriginal %y',{pathParse});
 									if (myData.cache) {
 										var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
-					
+
 										var options={
 											_id:fileID,
 											filename: baseName,
@@ -520,11 +534,11 @@ ImageFiles.routeOriginal=function(context,myData) {
 										}
 										// if (dim && dim.width) options.metadata.width=dim.width;
 										// if (dim && dim.height) options.metadata.height=dim.height;
-								
+
 										for (var k in myData) if (k!='link' && k!='cache') options.metadata[k]=myData[k];
 										if (!options.metadata.name) options.metadata.name=baseName.replace(/[a-f0-9]{32,32}/gi,'').replace(/[0-9]{5,32}/g,'').replace(/[-_\.]+/g,' ').replace(/(jpg|jpeg|png|gif)$/i,' ').replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();})
 										if (!options.metadata.title) options.metadata.title=options.metadata.name;
-									
+
 										gfs.createWriteStream(options,Meteor.bindEnvironment(function (error, writestream) {
 											if (writestream) {
 												writestream.on('finish', function() {
@@ -594,7 +608,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 ImageFiles.routeDerivate=function(context,myData) {
 	try {
 		if ((context.request.query && context.request.query.url) || context.params.id) {
-		
+
 			pipeCachedFile(myData,context.request,context.response,function(err,myData) {
 				if (err) {
 					throw err;
@@ -607,7 +621,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 						return request({uri:myData.link,encoding:'binary'},Meteor.bindEnvironment(function(error, response, body) {
 							if (error) throw error;
 							if (body && response.statusCode==200) {
-								
+
 								var fimageData=new Buffer(body,'binary');
 								let ftype=fileType(fimageData);
 								if (!ftype || !ftype.mime || !ftype.mime.match(/^image\//)) {
@@ -617,7 +631,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 									context.response.end();
 									return;
 								}
-								
+
 								debug('routeDerivate %y',{headers:response.headers});
 
 								if (!/^image\//.test(response.headers['content-type']) || (ftype && ftype.mime === 'image/x-icon')) {
@@ -658,7 +672,7 @@ ImageFiles.routeDerivate=function(context,myData) {
                       //   sizer='sharp'
                       //   prom=sharp(inpath).resize( myData.derivate.options.width ? myData.derivate.options.width : null, myData.derivate.options.height ? myData.derivate.options.height : null).toFile(outpath)
                       // } else {
-                        sizer='easyimg' 
+                        sizer='easyimg'
                         prom=easyimg[myData.derivate.method](patchWidth(_.extend(opts,myData.derivate.options)))
                       // }
 											prom.then(
@@ -684,10 +698,10 @@ ImageFiles.routeDerivate=function(context,myData) {
 															// var pathParse=path.parse(urlParse.pathname);
 															var baseName=path.basename(urlParse.pathname);
 															// debug('routeDerivate %y',{pathParse});
-												
+
 															if (myData.cache) {
 																var gfs = Grid(MongoInternals.defaultRemoteCollectionDriver().mongo.db, MongoInternals.NpmModule,gridCollection);
-												
+
 																var options={
 																	_id:fileID,
 																	filename: baseName,
@@ -813,6 +827,7 @@ if (RouterLayer && RouterLayer.ironRouter) {
 } else {
   const image_file_keys=[]
   const image_file_re = pathToRegexp('/image/file/:id?/:method?/:width?/:height?',image_file_keys)
+  const image_bare_re = pathToRegexp('/image',image_file_keys)
   WebApp.connectHandlers.use((req, res, next) => {
     const matches = image_file_re.exec(req.url)
     if (matches) {
@@ -820,7 +835,12 @@ if (RouterLayer && RouterLayer.ironRouter) {
       for (let m=1;m<matches.length;m++) if (typeof matches[m] != 'undefined') params[image_file_keys[m-1].name] = matches[m];
       ImageFiles.routeFile({params: params, request: req, response: res, next: next});
     } else {
-      next();
+      const parsed = url.parse(req.url)
+      if (parsed.pathname == '/image' && parsed.query && req.query && req.query.url) {
+        ImageFiles.routeFile({params: {}, request: req, response: res, next: next});
+      } else {
+        next();
+      }
     }
   })
 }
@@ -848,13 +868,11 @@ if (RouterLayer && RouterLayer.ironRouter) {
 } else {
   const image_collection_keys=[]
   const image_collection_re = pathToRegexp('/image/:collection?/:id?/:method?/:width?/:height?',image_collection_keys)
-      // yves({image_collection_keys})
   WebApp.connectHandlers.use((req, res, next) => {
     const matches = image_collection_re.exec(req.url)
     if (matches) {
       let params={}
       for (let m=1;m<matches.length;m++) if (typeof matches[m] != 'undefined') params[image_collection_keys[m-1].name] = matches[m];
-      // yves({params})
       ImageFiles.routeCollection({params: params, request: req, response: res, next: next})
     } else {
       next();
@@ -865,24 +883,16 @@ if (RouterLayer && RouterLayer.ironRouter) {
 
 ImageFiles.registerCollection('orion',function(id,callback) {
 	var result={};
-	
-	// yves({files:orion.filesystem.collection.find({},{}).fetch()});
-	// yves({id});
-  // debug('orion %y',{files:orion.filesystem.collection.find({},{}).fetch()});
+
   debug('orion %y',{id});
 	let orionFile=orion.filesystem.collection.find({$or:[{_id:id},{'meta.gridFS_id':id}]},{limit:1}).fetch();
 	if (orionFile && orionFile.length) {
 		orionFile=orionFile[0];
 		if (orionFile.url) result.link=orionFile.url;
 		if (orionFile.name) result.title=orionFile.name;
-		// result.file={};
-		// yves({result});
-		// callback(null,result);
 	} else {
 		result.link='/gridfs/data/id/'+id;
-		// callback(new Error('orionFile ID not found'));
 	}
 	callback(null,result);
 })
-
 

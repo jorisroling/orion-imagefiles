@@ -1,14 +1,14 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '1.0.82',
+	version: '1.0.84',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
 Package.onUse(function(api) {
 	api.versionsFrom('1.3');
 	api.use([
-		'meteor-platform', 
+		'meteor-platform',
 		'http@1.2.9',
 		'less@2.7.9',
 		'ecmascript@0.8.2',
@@ -22,7 +22,7 @@ Package.onUse(function(api) {
 	]);
 
 	api.use(['orionjs:bootstrap@1.8.0'], 'client', { weak: true });
-	
+
 	api.use([
 		'jorisroling:isotope@1.0.14',
 		'mizzao:bootboxjs@4.4.0',
@@ -45,10 +45,11 @@ Package.onUse(function(api) {
 		"async":"2.6.0",
 		'file-type':'6.1.0',
     'path-to-regexp':'2.2.1',
+    'pexels-api-wrapper' : '1.0.9',
 	});
 
 	api.addAssets('loading.gif','client')
-	
+
 	api.export('ImageFiles','server');
 	api.export('ImageFilesCollection','server');
 });
