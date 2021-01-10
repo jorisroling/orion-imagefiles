@@ -1,7 +1,7 @@
 Package.describe({
 	name: 'jorisroling:orion-imagefiles',
 	summary: 'ImageFiles in Orion',
-	version: '1.0.84',
+	version: '1.0.86',
 	git: 'https://github.com/jorisroling/orion-imagefiles'
 });
 
@@ -10,7 +10,7 @@ Package.onUse(function(api) {
 	api.use([
 		'meteor-platform',
 		'http@1.2.9',
-		'less@2.7.9',
+		'less@3.0.1',
 		'ecmascript@0.8.2',
 		'orionjs:core@1.8.0',
 		'orionjs:accounts@1.8.1',

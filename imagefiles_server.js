@@ -362,7 +362,7 @@ ImageFiles.ensureImage=function(myData,callback)
 
 					if (body && response.statusCode==200) {
 						// yves({body});
-						var imageData=new Buffer(body,'binary');
+						var imageData=Buffer.from(body,'binary');
 						try {
 							var type=response.headers['content-type'];
 							if (!type) {
@@ -382,7 +382,7 @@ ImageFiles.ensureImage=function(myData,callback)
 								yves({link:myData.link,type,e});
 							}
 
-							// var imageData=new Buffer(file.toString(),'binary');
+							// var imageData=Buffer.from(file.toString(),'binary');
 
 							if (verbose) console.log('File out read.')
 
@@ -482,7 +482,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 
 							if (body && response.statusCode==200) {
 								// yves({body});
-								var imageData=new Buffer(body,'binary');
+								var imageData=Buffer.from(body,'binary');
 								try {
 									var type=response.headers['content-type'];
 									if (!type) {
@@ -503,7 +503,7 @@ ImageFiles.routeOriginal=function(context,myData) {
 										yves({link:myData.link,type,e});
 									}
 
-									// var imageData=new Buffer(file.toString(),'binary');
+									// var imageData=Buffer.from(file.toString(),'binary');
 
 									if (verbose) console.log('File out read.')
 
@@ -622,7 +622,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 							if (error) throw error;
 							if (body && response.statusCode==200) {
 
-								var fimageData=new Buffer(body,'binary');
+								var fimageData=Buffer.from(body,'binary');
 								let ftype=fileType(fimageData);
 								if (!ftype || !ftype.mime || !ftype.mime.match(/^image\//)) {
   								debug('bad ftype %y',ftype);
@@ -685,7 +685,7 @@ ImageFiles.routeDerivate=function(context,myData) {
 													if (!error && response && response.statusCode == 200) {
 														fs.readFile((image_type=='mvg')?inpath:outpath, 'binary', Meteor.bindEnvironment(function (err, file) {
 
-															var imageData=new Buffer(file.toString(),'binary');
+															var imageData=Buffer.from(file.toString(),'binary');
 
 															if (verbose) console.log('File out read.')
 
